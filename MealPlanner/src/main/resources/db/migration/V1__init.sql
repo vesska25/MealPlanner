@@ -1,0 +1,1 @@
+-- Initial migration: verifies Flyway is wired up correctly. No schema yet.
