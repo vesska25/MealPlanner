@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Runs the throwaway agent-layer spike (PRD 9.1 step 3) against the real Anthropic API.
+# Runs the real pantry-assistant agent (PRD 9.1 step 6) against the live Anthropic API.
 # Loads config from .env (gitignored) so the API key never has to be pasted into a shell
 # command or committed anywhere. See .env.example for the expected keys.
 #
-# Usage: scripts/run-agent-spike.sh ["optional question for the model"]
+# Usage: scripts/run-pantry-assistant.sh ["optional question for the model"]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -19,11 +19,11 @@ if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
   exit 1
 fi
 
-export SPRING_PROFILES_ACTIVE=agent-spike
+export SPRING_PROFILES_ACTIVE=pantry-assistant
 
 mvn_args=()
-if [ -n "${AGENT_SPIKE_JVM_ARGS:-}" ]; then
-  mvn_args+=("-Dspring-boot.run.jvmArguments=$AGENT_SPIKE_JVM_ARGS")
+if [ -n "${AGENT_JVM_ARGS:-}" ]; then
+  mvn_args+=("-Dspring-boot.run.jvmArguments=$AGENT_JVM_ARGS")
 fi
 if [ "$#" -gt 0 ]; then
   mvn_args+=("-Dspring-boot.run.arguments=$*")

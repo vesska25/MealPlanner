@@ -1,0 +1,4 @@
+Mark one specific pantry item as thrown away (spoiled, forgotten, or bought too much) rather
+than used. Requires the exact pantry item id — call get_pantry_contents first if you don't
+already have it from earlier in this conversation. A reason is required: EXPIRED_EARLY,
+DIDNT_COOK_IN_TIME, or BOUGHT_TOO_MUCH.

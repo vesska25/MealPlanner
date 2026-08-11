@@ -1,0 +1,3 @@
+List everything currently active in the user's pantry: product name, quantity, unit, and
+expiry date, soonest-expiring first. Takes no arguments. Call this whenever you need to know
+what the user actually has before answering a question about their pantry.

@@ -1,0 +1,4 @@
+Record that the user used up some quantity of a product, deducting it from their pantry stock.
+Deducts from the soonest-to-expire stock first. If the user doesn't have enough of the product
+recorded, this fails with an explanation instead of going negative — tell the user what's
+missing rather than retrying with a smaller amount on your own.

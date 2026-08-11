@@ -1,0 +1,3 @@
+Look up products in the product catalogue by a case-insensitive substring of their canonical
+name. Returns canonical name, category, and default shelf life in days. Use this to find the
+canonical name of a product before adding or consuming pantry stock.

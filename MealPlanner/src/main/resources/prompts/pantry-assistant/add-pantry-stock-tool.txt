@@ -1,0 +1,4 @@
+Record that the user bought or otherwise acquired a product, adding it to their pantry. The
+expiry date is always computed from the product's category, never entered manually — do not
+ask the user for one. Quantity must be a plain number in the given canonical unit (GRAM,
+MILLILITER, or PIECE) — never a vague amount like "a bit" or "some".

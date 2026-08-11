@@ -1,4 +1,4 @@
-package de.mimosa_dev.MealPlanner.agentspike;
+package de.mimosa_dev.MealPlanner.agent.tool;
 
 import com.anthropic.core.JsonValue;
 import com.anthropic.models.messages.Tool;
@@ -7,45 +7,38 @@ import de.mimosa_dev.MealPlanner.product.ProductRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StreamUtils;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/**
- * The spike's one read-only tool (PRD 9.1 step 3): lets the model query the seeded product
- * catalogue (from step 2) by name. Description lives in an external resource file per AI-33.
- * Thrown away once tool-calling mechanics are verified — the real agent layer (step 6) scopes
- * its tool surface per scenario (AI-13), which this single always-available tool doesn't.
- */
 @Component
-class ProductLookupTool {
+public class LookupProductsTool implements AgentTool {
 
-    static final String NAME = "lookup_products";
+    public static final String NAME = "lookup_products";
 
     private final ProductRepository productRepository;
     private final String description;
 
-    ProductLookupTool(
+    public LookupProductsTool(
             ProductRepository productRepository,
-            @Value("classpath:prompts/lookup-products-tool-description.txt") Resource descriptionResource) {
+            @Value("classpath:prompts/pantry-assistant/lookup-products-tool.txt") Resource descriptionResource) {
         this.productRepository = productRepository;
-        this.description = readResource(descriptionResource);
+        this.description = ToolDescriptions.read(descriptionResource);
     }
 
-    private static String readResource(Resource resource) {
-        try (var in = resource.getInputStream()) {
-            return StreamUtils.copyToString(in, StandardCharsets.UTF_8).strip();
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+    @Override
+    public String name() {
+        return NAME;
     }
 
-    Tool definition() {
+    @Override
+    public boolean stateChanging() {
+        return false;
+    }
+
+    @Override
+    public Tool definition() {
         return Tool.builder()
                 .name(NAME)
                 .description(description)
@@ -60,7 +53,12 @@ class ProductLookupTool {
                 .build();
     }
 
-    String execute(String query) {
+    private record Input(String query) {
+    }
+
+    @Override
+    public String execute(Long userId, JsonValue input) {
+        String query = input.convert(Input.class).query();
         List<Product> matches = productRepository.findByCanonicalNameContainingIgnoreCase(query);
         if (matches.isEmpty()) {
             return "No products found matching \"" + query + "\".";

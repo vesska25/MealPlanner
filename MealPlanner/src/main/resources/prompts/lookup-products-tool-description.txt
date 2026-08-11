@@ -1,2 +1,0 @@
-Look up products in the product catalogue by a case-insensitive substring of their
-canonical name. Returns canonical name, category, and default shelf life in days.
