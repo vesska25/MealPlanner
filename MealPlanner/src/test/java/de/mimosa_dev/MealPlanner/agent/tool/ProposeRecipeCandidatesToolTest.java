@@ -118,7 +118,8 @@ class ProposeRecipeCandidatesToolTest extends AbstractIntegrationTest {
                 "name", name,
                 "ingredients", ingredients,
                 "requiredEquipment", requiredEquipment,
-                "cookTimeMinutes", cookTimeMinutes);
+                "cookTimeMinutes", cookTimeMinutes,
+                "basePortions", 4);
     }
 
     private static Map<String, Object> ingredient(String productName, String quantity, String unit) {

@@ -40,6 +40,9 @@ public class Recipe {
     @Column(name = "cook_time_minutes", nullable = false)
     private Integer cookTimeMinutes;
 
+    @Column(name = "base_portions", nullable = false)
+    private Integer basePortions;
+
     @ElementCollection
     @CollectionTable(name = "recipe_equipment", joinColumns = @JoinColumn(name = "recipe_id"))
     @Column(name = "equipment")
@@ -54,10 +57,11 @@ public class Recipe {
     protected Recipe() {
     }
 
-    public Recipe(Long userId, String name, Integer cookTimeMinutes, Set<String> requiredEquipment) {
+    public Recipe(Long userId, String name, Integer cookTimeMinutes, Integer basePortions, Set<String> requiredEquipment) {
         this.userId = userId;
         this.name = name;
         this.cookTimeMinutes = cookTimeMinutes;
+        this.basePortions = basePortions;
         this.requiredEquipment = new LinkedHashSet<>(requiredEquipment);
     }
 
@@ -80,6 +84,10 @@ public class Recipe {
 
     public Integer getCookTimeMinutes() {
         return cookTimeMinutes;
+    }
+
+    public Integer getBasePortions() {
+        return basePortions;
     }
 
     public Set<String> getRequiredEquipment() {

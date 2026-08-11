@@ -97,8 +97,11 @@ public class ProposeRecipeCandidatesTool implements AgentTool {
                                 "items", Map.of("type", "string"),
                                 "description", "Equipment this recipe needs, e.g. \"oven\""),
                         "cookTimeMinutes", Map.of("type", "integer",
-                                "description", "Total time to cook, in minutes")),
-                "required", List.of("name", "ingredients", "requiredEquipment", "cookTimeMinutes"));
+                                "description", "Total time to cook, in minutes"),
+                        "basePortions", Map.of("type", "integer",
+                                "description", "How many portions this recipe makes as written — "
+                                        + "the ingredient quantities above are for this many portions")),
+                "required", List.of("name", "ingredients", "requiredEquipment", "cookTimeMinutes", "basePortions"));
 
         return Tool.builder()
                 .name(NAME)
@@ -118,7 +121,9 @@ public class ProposeRecipeCandidatesTool implements AgentTool {
     private record IngredientInput(String productName, BigDecimal quantity, Unit unit) {
     }
 
-    private record CandidateInput(String name, List<IngredientInput> ingredients, Set<String> requiredEquipment, int cookTimeMinutes) {
+    private record CandidateInput(
+            String name, List<IngredientInput> ingredients, Set<String> requiredEquipment,
+            int cookTimeMinutes, int basePortions) {
     }
 
     private record Input(List<CandidateInput> candidates) {
@@ -161,7 +166,7 @@ public class ProposeRecipeCandidatesTool implements AgentTool {
             double score = scorer.score(userId, candidate);
 
             Recipe recipe = new Recipe(userId, candidateInput.name(), candidateInput.cookTimeMinutes(),
-                    candidateInput.requiredEquipment());
+                    candidateInput.basePortions(), candidateInput.requiredEquipment());
             for (int i = 0; i < ingredients.size(); i++) {
                 recipe.addIngredient(new RecipeIngredientEntity(
                         resolvedProducts.get(i), ingredients.get(i).quantity(), ingredients.get(i).unit()));
