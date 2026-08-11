@@ -40,4 +40,8 @@ public interface PantryItemRepository extends JpaRepository<PantryItem, Long> {
     BigDecimal sumQuantityByUserAndProductAndUnitAndStatus(
             @Param("userId") Long userId, @Param("productId") Long productId,
             @Param("unit") Unit unit, @Param("status") PantryItemStatus status);
+
+    // FR-04 (full data export): every position regardless of status, not just ACTIVE.
+    @Query("SELECT pi FROM PantryItem pi JOIN FETCH pi.product WHERE pi.userId = :userId")
+    List<PantryItem> findByUserId(@Param("userId") Long userId);
 }

@@ -79,6 +79,19 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- TestRestTemplate moved out of spring-boot-test into its own artifact in Boot 4.x. -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-resttestclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- Provides RestTemplateBuilder, which spring-boot-resttestclient's
+                 TestRestTemplateTestAutoConfiguration needs but doesn't pull in transitively. -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-restclient</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa-test</artifactId>
             <scope>test</scope>
