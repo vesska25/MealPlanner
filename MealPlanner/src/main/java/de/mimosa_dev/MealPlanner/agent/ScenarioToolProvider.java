@@ -6,6 +6,7 @@ import de.mimosa_dev.MealPlanner.agent.tool.ConsumePantryStockTool;
 import de.mimosa_dev.MealPlanner.agent.tool.DiscardPantryItemTool;
 import de.mimosa_dev.MealPlanner.agent.tool.GetPantryContentsTool;
 import de.mimosa_dev.MealPlanner.agent.tool.LookupProductsTool;
+import de.mimosa_dev.MealPlanner.agent.tool.ProposeRecipeCandidatesTool;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
@@ -27,11 +28,16 @@ public class ScenarioToolProvider {
             GetPantryContentsTool getPantryContentsTool,
             AddPantryStockTool addPantryStockTool,
             ConsumePantryStockTool consumePantryStockTool,
-            DiscardPantryItemTool discardPantryItemTool) {
+            DiscardPantryItemTool discardPantryItemTool,
+            ProposeRecipeCandidatesTool proposeRecipeCandidatesTool) {
         this.toolsByScenario = new EnumMap<>(AgentScenario.class);
         toolsByScenario.put(AgentScenario.PANTRY_ASSISTANT, List.of(
                 lookupProductsTool, getPantryContentsTool, addPantryStockTool,
                 consumePantryStockTool, discardPantryItemTool));
+        // Meal planning only reads pantry context and proposes recipes — it doesn't mutate
+        // stock directly (AI-13: tool set is scoped to what the scenario actually needs).
+        toolsByScenario.put(AgentScenario.MEAL_PLANNING, List.of(
+                lookupProductsTool, getPantryContentsTool, proposeRecipeCandidatesTool));
     }
 
     public List<AgentTool> toolsFor(AgentScenario scenario) {

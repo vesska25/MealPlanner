@@ -33,7 +33,8 @@ import static org.mockito.Mockito.when;
 
 class AgentRunnerTest {
 
-    private static final Resource SYSTEM_PROMPT = new ClassPathResource("prompts/pantry-assistant/system-prompt.txt");
+    private static final Resource PANTRY_ASSISTANT_PROMPT = new ClassPathResource("prompts/pantry-assistant/system-prompt.txt");
+    private static final Resource MEAL_PLANNING_PROMPT = new ClassPathResource("prompts/meal-planning/system-prompt.txt");
     private static final Long USER_ID = 1L;
 
     private AnthropicClient client;
@@ -58,7 +59,7 @@ class AgentRunnerTest {
         when(toolCallRepository.findByAgentRunIdAndSequenceNumber(any(), anyInt())).thenReturn(Optional.empty());
 
         runner = new AgentRunner(client, toolProvider, agentRunRepository, toolCallRepository,
-                "claude-haiku-4-5", SYSTEM_PROMPT);
+                "claude-haiku-4-5", PANTRY_ASSISTANT_PROMPT, MEAL_PLANNING_PROMPT);
     }
 
     @Test

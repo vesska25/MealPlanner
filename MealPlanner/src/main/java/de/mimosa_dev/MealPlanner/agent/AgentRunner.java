@@ -44,7 +44,9 @@ import java.util.stream.Collectors;
 public class AgentRunner {
 
     private static final int MAX_ITERATIONS = 5; // AI-20 default
-    private static final long MAX_TOKENS = 1024L;
+    // Meal planning submits several full recipes (name + ingredients + equipment) in one tool
+    // call, which needs more headroom than a short pantry-assistant reply.
+    private static final long MAX_TOKENS = 4096L;
 
     private final AnthropicClient client;
     private final ScenarioToolProvider toolProvider;
@@ -60,7 +62,8 @@ public class AgentRunner {
             AgentRunRepository agentRunRepository,
             ToolCallRepository toolCallRepository,
             @Value("${anthropic.model}") String model,
-            @Value("classpath:prompts/pantry-assistant/system-prompt.txt") Resource pantryAssistantPrompt) {
+            @Value("classpath:prompts/pantry-assistant/system-prompt.txt") Resource pantryAssistantPrompt,
+            @Value("classpath:prompts/meal-planning/system-prompt.txt") Resource mealPlanningPrompt) {
         this.client = client;
         this.toolProvider = toolProvider;
         this.agentRunRepository = agentRunRepository;
@@ -69,6 +72,7 @@ public class AgentRunner {
 
         this.systemPrompts = new EnumMap<>(AgentScenario.class);
         systemPrompts.put(AgentScenario.PANTRY_ASSISTANT, readResource(pantryAssistantPrompt));
+        systemPrompts.put(AgentScenario.MEAL_PLANNING, readResource(mealPlanningPrompt));
 
         this.systemPromptVersions = systemPrompts.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> sha256Hex(e.getValue()), (a, b) -> a, () -> new EnumMap<>(AgentScenario.class)));

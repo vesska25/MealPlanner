@@ -1,0 +1,6 @@
+Submit one or more recipe ideas for validation and ranking. Each is checked against hard
+constraints (allergies, exclusions, pantry feasibility, required equipment, cook time) — a
+candidate that fails is rejected and explained, not silently dropped. Candidates that pass are
+scored and returned ranked, favoring recipes that use ingredients close to expiring and that
+you can make with what's already in the pantry. Submit all your ideas in one call rather than
+one at a time.
