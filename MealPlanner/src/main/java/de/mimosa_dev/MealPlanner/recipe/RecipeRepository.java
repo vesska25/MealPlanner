@@ -9,10 +9,13 @@ import java.util.Optional;
 
 public interface RecipeRepository extends JpaRepository<Recipe, Long> {
 
-    // Explicit JOIN FETCH: a cooking confirmation reads a Recipe persisted in an earlier,
-    // unrelated transaction, so lazy ingredients/product would throw LazyInitializationException
-    // outside that original session (same lesson as PantryItemRepository's fetch query).
-    @Query("SELECT r FROM Recipe r JOIN FETCH r.ingredients i JOIN FETCH i.product WHERE r.id = :id")
+    // Explicit JOIN FETCH: a cooking confirmation (or a controller serializing a Recipe outside
+    // any transaction of its own, e.g. RecipeController) reads a Recipe persisted in an earlier,
+    // unrelated transaction, so lazy ingredients/product/requiredEquipment would throw
+    // LazyInitializationException outside that original session (same lesson as
+    // PantryItemRepository's fetch query). requiredEquipment is a Set, not a List, so fetching it
+    // alongside the ingredients bag doesn't trip Hibernate's MultipleBagFetchException.
+    @Query("SELECT r FROM Recipe r JOIN FETCH r.ingredients i JOIN FETCH i.product LEFT JOIN FETCH r.requiredEquipment WHERE r.id = :id")
     Optional<Recipe> findWithIngredientsById(@Param("id") Long id);
 
     // FR-04 (full data export). No fetch join here (unlike findWithIngredientsById) — the

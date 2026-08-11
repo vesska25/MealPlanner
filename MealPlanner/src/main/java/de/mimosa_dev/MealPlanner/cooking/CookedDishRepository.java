@@ -17,6 +17,13 @@ public interface CookedDishRepository extends JpaRepository<CookedDish, Long> {
     // FR-04 (full data export).
     List<CookedDish> findByUserId(Long userId);
 
+    // PRD step 11: the "what's ready to eat" read view. Explicit JOIN FETCH: the controller
+    // reads recipe.name outside any transaction of its own (same lesson as
+    // PantryItemRepository's fetch query, from the step-6 LazyInitializationException bug).
+    @Query("SELECT cd FROM CookedDish cd JOIN FETCH cd.recipe WHERE cd.userId = :userId AND cd.status = :status")
+    List<CookedDish> findByUserIdAndStatusWithRecipe(
+            @Param("userId") Long userId, @Param("status") CookedDishStatus status);
+
     // FR-33: matched by recipe name (same Phase A simplification as PreferenceSignal) rather
     // than recipe id, since a fresh model-generated candidate has no id to compare against yet.
     @Query("SELECT COUNT(cd) > 0 FROM CookedDish cd WHERE cd.userId = :userId "
