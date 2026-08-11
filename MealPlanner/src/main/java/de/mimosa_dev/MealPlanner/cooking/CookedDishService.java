@@ -24,15 +24,18 @@ public class CookedDishService {
     /**
      * FR-52c: eaten portions support fractional values; the remainder is reduced by the amount
      * eaten, and reaching zero flips the record to {@code CONSUMED}.
+     *
+     * <p>FR-03: ownership is checked here, not just wherever the id came from — a cooked dish
+     * that exists but belongs to a different user is treated identically to one that doesn't
+     * exist at all, rather than a distinguishable "forbidden" response that would reveal it.
      */
     @Transactional
-    public void consumePortions(Long cookedDishId, BigDecimal portionsEaten) {
+    public void consumePortions(Long userId, Long cookedDishId, BigDecimal portionsEaten) {
         if (portionsEaten.signum() <= 0) {
             throw new IllegalArgumentException("Portions eaten must be positive, got " + portionsEaten);
         }
 
-        CookedDish dish = cookedDishRepository.findById(cookedDishId)
-                .orElseThrow(() -> new NoSuchElementException("Cooked dish " + cookedDishId + " not found"));
+        CookedDish dish = findOwnedOrThrow(userId, cookedDishId);
         if (dish.getStatus() != CookedDishStatus.ACTIVE) {
             throw new IllegalStateException("Cooked dish " + cookedDishId + " is " + dish.getStatus() + ", not ACTIVE");
         }
@@ -50,13 +53,18 @@ public class CookedDishService {
 
     /** No discard-reason enum here — unlike pantry_item's FR-23, the PRD never enumerates one. */
     @Transactional
-    public void discard(Long cookedDishId) {
-        CookedDish dish = cookedDishRepository.findById(cookedDishId)
-                .orElseThrow(() -> new NoSuchElementException("Cooked dish " + cookedDishId + " not found"));
+    public void discard(Long userId, Long cookedDishId) {
+        CookedDish dish = findOwnedOrThrow(userId, cookedDishId);
         if (dish.getStatus() != CookedDishStatus.ACTIVE) {
             throw new IllegalStateException("Cooked dish " + cookedDishId + " is " + dish.getStatus() + ", not ACTIVE");
         }
         dish.setStatus(CookedDishStatus.DISCARDED);
         cookedDishRepository.save(dish);
+    }
+
+    private CookedDish findOwnedOrThrow(Long userId, Long cookedDishId) {
+        return cookedDishRepository.findById(cookedDishId)
+                .filter(dish -> dish.getUserId().equals(userId))
+                .orElseThrow(() -> new NoSuchElementException("Cooked dish " + cookedDishId + " not found"));
     }
 }

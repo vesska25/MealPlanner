@@ -5,6 +5,7 @@ import de.mimosa_dev.MealPlanner.common.Unit;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductRepository;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,6 +19,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class PantryItemRepositoryTest extends AbstractIntegrationTest {
 
+    private static final Long USER_ID = 1L;
+
     @Autowired
     private PantryItemRepository pantryItemRepository;
 
@@ -26,6 +29,11 @@ class PantryItemRepositoryTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @BeforeEach
+    void ensureUser() {
+        ensureUserExists(USER_ID);
+    }
 
     @Test
     void savesAndReloadsPantryItem() {
@@ -78,7 +86,7 @@ class PantryItemRepositoryTest extends AbstractIntegrationTest {
 
     private PantryItem newItem(Product product, BigDecimal quantity) {
         PantryItem item = new PantryItem();
-        item.setUserId(1L);
+        item.setUserId(USER_ID);
         item.setProduct(product);
         item.setQuantity(quantity);
         item.setUnit(Unit.GRAM);

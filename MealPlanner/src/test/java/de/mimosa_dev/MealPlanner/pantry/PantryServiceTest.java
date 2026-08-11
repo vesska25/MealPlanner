@@ -5,6 +5,7 @@ import de.mimosa_dev.MealPlanner.common.Unit;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductRepository;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Import;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -32,6 +34,11 @@ class PantryServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @BeforeEach
+    void ensureUser() {
+        ensureUserExists(USER_ID);
+    }
 
     @Test
     void addStockDerivesExpiryFromProductShelfLife() {
@@ -119,7 +126,7 @@ class PantryServiceTest extends AbstractIntegrationTest {
                 USER_ID, milk, new BigDecimal("200"), Unit.GRAM, LocalDate.now());
         entityManager.clear();
 
-        pantryService.discard(item.getId(), DiscardReason.EXPIRED_EARLY);
+        pantryService.discard(USER_ID, item.getId(), DiscardReason.EXPIRED_EARLY);
         entityManager.flush();
         entityManager.clear();
 
@@ -133,12 +140,25 @@ class PantryServiceTest extends AbstractIntegrationTest {
         Product milk = seededProduct("milk");
         PantryItem item = pantryService.addStock(
                 USER_ID, milk, new BigDecimal("200"), Unit.GRAM, LocalDate.now());
-        pantryService.discard(item.getId(), DiscardReason.BOUGHT_TOO_MUCH);
+        pantryService.discard(USER_ID, item.getId(), DiscardReason.BOUGHT_TOO_MUCH);
         entityManager.flush();
         entityManager.clear();
 
-        assertThatThrownBy(() -> pantryService.discard(item.getId(), DiscardReason.DIDNT_COOK_IN_TIME))
+        assertThatThrownBy(() -> pantryService.discard(USER_ID, item.getId(), DiscardReason.DIDNT_COOK_IN_TIME))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void discardingAnotherUsersItemIsTreatedAsNotFound() {
+        Product milk = seededProduct("milk");
+        PantryItem item = pantryService.addStock(
+                USER_ID, milk, new BigDecimal("200"), Unit.GRAM, LocalDate.now());
+        entityManager.flush();
+        entityManager.clear();
+
+        Long someoneElse = USER_ID + 1;
+        assertThatThrownBy(() -> pantryService.discard(someoneElse, item.getId(), DiscardReason.BOUGHT_TOO_MUCH))
+                .isInstanceOf(NoSuchElementException.class);
     }
 
     private Product seededProduct(String canonicalName) {

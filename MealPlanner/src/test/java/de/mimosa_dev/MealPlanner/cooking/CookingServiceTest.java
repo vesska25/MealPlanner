@@ -13,6 +13,7 @@ import de.mimosa_dev.MealPlanner.recipe.Recipe;
 import de.mimosa_dev.MealPlanner.recipe.RecipeIngredientEntity;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -49,6 +50,11 @@ class CookingServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @BeforeEach
+    void ensureUser() {
+        ensureUserExists(USER_ID);
+    }
 
     @Test
     void happyPathDeductsScaledIngredientsAndCreatesTheCookedDish() {

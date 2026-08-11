@@ -5,6 +5,7 @@ import de.mimosa_dev.MealPlanner.common.Unit;
 import de.mimosa_dev.MealPlanner.pantry.PantryService;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -30,6 +31,11 @@ class RecipeCandidateScorerTest extends AbstractIntegrationTest {
 
     @Autowired
     private PantryService pantryService;
+
+    @BeforeEach
+    void ensureUser() {
+        ensureUserExists(USER_ID);
+    }
 
     @Test
     void aRecipeUsingAnIngredientExpiringSoonScoresHigherThanOneExpiringFar() {

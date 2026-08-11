@@ -9,6 +9,7 @@ import de.mimosa_dev.MealPlanner.pantry.PantryService;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductNormalizationService;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -46,6 +47,11 @@ class PantryToolsTest extends AbstractIntegrationTest {
     private PantryService pantryService;
     @Autowired
     private EntityManager entityManager;
+
+    @BeforeEach
+    void ensureUser() {
+        ensureUserExists(USER_ID);
+    }
 
     @Test
     void lookupProductsFindsASeededProduct() {

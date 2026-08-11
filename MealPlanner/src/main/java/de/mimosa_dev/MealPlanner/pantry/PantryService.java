@@ -92,10 +92,15 @@ public class PantryService {
      * FR-22/FR-23: marks an ACTIVE position as discarded with a reason, without deleting the
      * row — discard history feeds future anti-waste stats. INV-02: an already
      * consumed/discarded item cannot be discarded again.
+     *
+     * <p>FR-03: ownership is checked here, not just wherever the id came from — a pantry item
+     * that exists but belongs to a different user is treated identically to one that doesn't
+     * exist at all, rather than a distinguishable "forbidden" response that would reveal it.
      */
     @Transactional
-    public void discard(Long pantryItemId, DiscardReason reason) {
+    public void discard(Long userId, Long pantryItemId, DiscardReason reason) {
         PantryItem item = pantryItemRepository.findById(pantryItemId)
+                .filter(candidate -> candidate.getUserId().equals(userId))
                 .orElseThrow(() -> new NoSuchElementException("Pantry item " + pantryItemId + " not found"));
         if (item.getStatus() != PantryItemStatus.ACTIVE) {
             throw new IllegalStateException(

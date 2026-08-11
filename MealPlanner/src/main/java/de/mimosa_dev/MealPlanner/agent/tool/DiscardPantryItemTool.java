@@ -62,7 +62,7 @@ public class DiscardPantryItemTool implements AgentTool {
     @Override
     public String execute(Long userId, JsonValue input) {
         Input parsed = input.convert(Input.class);
-        pantryService.discard(parsed.pantryItemId(), parsed.reason());
+        pantryService.discard(userId, parsed.pantryItemId(), parsed.reason());
         return "Discarded pantry item #%d (%s).".formatted(parsed.pantryItemId(), parsed.reason());
     }
 }

@@ -12,6 +12,7 @@ import de.mimosa_dev.MealPlanner.recipe.DishCategoryResolver;
 import de.mimosa_dev.MealPlanner.recipe.Recipe;
 import de.mimosa_dev.MealPlanner.recipe.RecipeIngredientEntity;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -66,6 +67,11 @@ class CookingServiceConcurrencyTest extends AbstractIntegrationTest {
 
     @Autowired
     private CookedDishRepository cookedDishRepository;
+
+    @BeforeEach
+    void ensureUser() {
+        ensureUserExists(USER_ID);
+    }
 
     @Test
     void exactlyOneOfTwoConcurrentConfirmationsSucceedsWhenStockOnlyCoversOne() throws Exception {

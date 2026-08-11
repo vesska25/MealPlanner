@@ -9,6 +9,7 @@ import de.mimosa_dev.MealPlanner.product.ProductNormalizationService;
 import de.mimosa_dev.MealPlanner.recipe.RecipeCandidateScorer;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
 import de.mimosa_dev.MealPlanner.recipe.RecipeValidator;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -40,6 +41,11 @@ class ProposeRecipeCandidatesToolTest extends AbstractIntegrationTest {
 
     @Autowired
     private RecipeRepository recipeRepository;
+
+    @BeforeEach
+    void ensureUser() {
+        ensureUserExists(USER_ID);
+    }
 
     @Test
     void aFeasibleCandidateIsAcceptedScoredAndPersisted() {

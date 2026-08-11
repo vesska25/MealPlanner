@@ -9,12 +9,14 @@ import de.mimosa_dev.MealPlanner.recipe.Recipe;
 import de.mimosa_dev.MealPlanner.recipe.RecipeIngredientEntity;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,11 +42,16 @@ class CookedDishServiceTest extends AbstractIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
+    @BeforeEach
+    void ensureUser() {
+        ensureUserExists(USER_ID);
+    }
+
     @Test
     void consumingPartialPortionsDecrementsTheRemainderAndStaysActive() {
         CookedDish dish = savedCookedDish("4");
 
-        cookedDishService.consumePortions(dish.getId(), new BigDecimal("1.5"));
+        cookedDishService.consumePortions(USER_ID, dish.getId(), new BigDecimal("1.5"));
 
         CookedDish reloaded = cookedDishRepository.findById(dish.getId()).orElseThrow();
         assertThat(reloaded.getPortionsRemaining()).isEqualByComparingTo("2.5");
@@ -55,7 +62,7 @@ class CookedDishServiceTest extends AbstractIntegrationTest {
     void consumingTheLastPortionFlipsStatusToConsumed() {
         CookedDish dish = savedCookedDish("2");
 
-        cookedDishService.consumePortions(dish.getId(), new BigDecimal("2"));
+        cookedDishService.consumePortions(USER_ID, dish.getId(), new BigDecimal("2"));
 
         CookedDish reloaded = cookedDishRepository.findById(dish.getId()).orElseThrow();
         assertThat(reloaded.getPortionsRemaining()).isEqualByComparingTo("0");
@@ -66,7 +73,7 @@ class CookedDishServiceTest extends AbstractIntegrationTest {
     void consumingMoreThanRemainingIsRejected() {
         CookedDish dish = savedCookedDish("2");
 
-        assertThatThrownBy(() -> cookedDishService.consumePortions(dish.getId(), new BigDecimal("3")))
+        assertThatThrownBy(() -> cookedDishService.consumePortions(USER_ID, dish.getId(), new BigDecimal("3")))
                 .isInstanceOf(InsufficientPortionsException.class);
         assertThat(cookedDishRepository.findById(dish.getId()).orElseThrow().getPortionsRemaining())
                 .isEqualByComparingTo("2");
@@ -75,11 +82,11 @@ class CookedDishServiceTest extends AbstractIntegrationTest {
     @Test
     void aConsumedDishCannotBeConsumedAgain() {
         CookedDish dish = savedCookedDish("1");
-        cookedDishService.consumePortions(dish.getId(), new BigDecimal("1"));
+        cookedDishService.consumePortions(USER_ID, dish.getId(), new BigDecimal("1"));
         entityManager.flush();
         entityManager.clear();
 
-        assertThatThrownBy(() -> cookedDishService.consumePortions(dish.getId(), new BigDecimal("0.1")))
+        assertThatThrownBy(() -> cookedDishService.consumePortions(USER_ID, dish.getId(), new BigDecimal("0.1")))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -87,7 +94,7 @@ class CookedDishServiceTest extends AbstractIntegrationTest {
     void discardMarksAnActiveDishDiscarded() {
         CookedDish dish = savedCookedDish("3");
 
-        cookedDishService.discard(dish.getId());
+        cookedDishService.discard(USER_ID, dish.getId());
 
         assertThat(cookedDishRepository.findById(dish.getId()).orElseThrow().getStatus())
                 .isEqualTo(CookedDishStatus.DISCARDED);
@@ -96,12 +103,23 @@ class CookedDishServiceTest extends AbstractIntegrationTest {
     @Test
     void aDiscardedDishCannotBeDiscardedAgain() {
         CookedDish dish = savedCookedDish("3");
-        cookedDishService.discard(dish.getId());
+        cookedDishService.discard(USER_ID, dish.getId());
         entityManager.flush();
         entityManager.clear();
 
-        assertThatThrownBy(() -> cookedDishService.discard(dish.getId()))
+        assertThatThrownBy(() -> cookedDishService.discard(USER_ID, dish.getId()))
                 .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void consumingAnotherUsersDishIsTreatedAsNotFound() {
+        CookedDish dish = savedCookedDish("2");
+        entityManager.flush();
+        entityManager.clear();
+
+        Long someoneElse = USER_ID + 1;
+        assertThatThrownBy(() -> cookedDishService.consumePortions(someoneElse, dish.getId(), new BigDecimal("1")))
+                .isInstanceOf(NoSuchElementException.class);
     }
 
     private CookedDish savedCookedDish(String totalPortions) {
