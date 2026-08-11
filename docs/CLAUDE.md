@@ -23,23 +23,7 @@ Meal Planner Agent — a portfolio project demonstrating agentic system design i
 - Bean Validation annotations on all incoming DTOs.
 - Package-private where possible; keep public API surface minimal.
 
-## The most important rule: what you write vs. what I write
-
-**I write the business logic myself.** This is a learning project — I need to be able to explain every non-trivial decision at a job interview.
-
-When a task involves business logic (pricing/scoring rules, the tool-calling loop, portion scaling, recipe validation, anything in `docs/PRD.md` sections 3–4), do this instead of implementing it:
-
-1. Write the method signature, the DTO/entity shapes it needs, and a Javadoc comment describing what it must do and which PRD requirement it implements.
-2. Leave the body as `// TODO(sergio): implement — see PRD <requirement id>`.
-3. Explain briefly in your response what the method needs to handle, including edge cases from the PRD.
-
-You CAN write in full, without asking:
-- Boilerplate: entities, repositories, DTOs, mappers, controller skeletons
-- Config, `docker-compose.yml`, `pom.xml` changes
-- Tests for logic I've already written
-- Frontend (React) components once we get there
-
-If you're unsure whether something counts as "business logic" — ask, don't guess.
+Business logic (pricing/scoring rules, the tool-calling loop, portion scaling, recipe validation, anything in `docs/PRD.md` sections 3–4) is implemented directly, same as everything else — no stub-and-TODO handoff. Explain non-obvious decisions in your response so they're easy to walk through later, and cite the PRD requirement a piece of logic implements.
 
 ## Agent layer — non-negotiable rules (see PRD section 4 and 6.1)
 
@@ -67,7 +51,7 @@ If a change touches any of these, flag it explicitly in your response, don't jus
 
 - Code comments, commit messages, class/method/variable names: **English only**. UI copy and bot responses will be localized later — that's a separate concern.
 - Commit after each working, reviewed task — not after a whole feature. Small commits are how I keep the ability to roll back.
-- Before writing code for a new area, tell me your plan (files touched, approach) and wait for a go-ahead on anything non-trivial.
+- Ask for a plan and my go-ahead only before touching architecture decisions or anything covered by the "Domain invariants" section above. For everything else — including business logic — just do it and summarize what you changed afterward. Don't wait for approval on routine work.
 
 ## What NOT to do
 
