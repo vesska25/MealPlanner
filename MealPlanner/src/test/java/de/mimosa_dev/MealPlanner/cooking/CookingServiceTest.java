@@ -12,6 +12,7 @@ import de.mimosa_dev.MealPlanner.recipe.DishCategoryResolver;
 import de.mimosa_dev.MealPlanner.recipe.Recipe;
 import de.mimosa_dev.MealPlanner.recipe.RecipeIngredientEntity;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
+import de.mimosa_dev.MealPlanner.recipe.RecipeSuggestionService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Import({
         CookingService.class, DishCategoryResolver.class, NutritionCalculationService.class,
-        PantryService.class
+        PantryService.class, RecipeSuggestionService.class
 })
 class CookingServiceTest extends AbstractIntegrationTest {
 

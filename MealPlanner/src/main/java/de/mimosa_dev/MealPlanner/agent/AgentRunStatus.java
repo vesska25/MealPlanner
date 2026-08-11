@@ -13,5 +13,9 @@ public enum AgentRunStatus {
     VALIDATION_FAILED,
     ITERATION_LIMIT,
     LLM_TIMEOUT,
-    BUDGET_EXCEEDED
+    BUDGET_EXCEEDED,
+    // AI-20a: the meal-planning scenario's deterministic fallback, taken after ITERATION_LIMIT
+    // would otherwise fire. A successful outcome (the user gets a usable pick), but explicitly
+    // distinguished so the UI can mark it as a fallback rather than a full pick (AI-20c).
+    FALLBACK_RESPONSE
 }

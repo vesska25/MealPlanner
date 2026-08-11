@@ -16,4 +16,12 @@ public record UserConstraints(
         Set<Long> excludedProductIds,
         Set<String> availableEquipment,
         int maxCookTimeMinutes) {
+
+    /** The stand-in every caller uses until a real {@code user_profile} exists. */
+    public static UserConstraints defaults() {
+        return new UserConstraints(
+                Set.of(),
+                Set.of("stove", "oven", "pan", "pot", "knife", "cutting board", "microwave"),
+                120);
+    }
 }

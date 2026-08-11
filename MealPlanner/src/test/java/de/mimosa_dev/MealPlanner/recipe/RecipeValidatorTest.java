@@ -2,6 +2,8 @@ package de.mimosa_dev.MealPlanner.recipe;
 
 import de.mimosa_dev.MealPlanner.AbstractIntegrationTest;
 import de.mimosa_dev.MealPlanner.common.Unit;
+import de.mimosa_dev.MealPlanner.cooking.CookedDish;
+import de.mimosa_dev.MealPlanner.cooking.CookedDishRepository;
 import de.mimosa_dev.MealPlanner.pantry.PantryService;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductRepository;
@@ -30,6 +32,12 @@ class RecipeValidatorTest extends AbstractIntegrationTest {
 
     @Autowired
     private PantryService pantryService;
+
+    @Autowired
+    private RecipeRepository recipeRepository;
+
+    @Autowired
+    private CookedDishRepository cookedDishRepository;
 
     @BeforeEach
     void ensureUser() {
@@ -159,6 +167,32 @@ class RecipeValidatorTest extends AbstractIntegrationTest {
                         RecipeViolationType.COOK_TIME_EXCEEDS_LIMIT);
     }
 
+    @Test
+    void flagsARecipeCookedWithinTheLastFourteenDays() {
+        cookDishNamed("Weeknight stir fry", LocalDate.now().minusDays(3));
+
+        RecipeCandidate recipe = new RecipeCandidate("Weeknight stir fry", List.of(), Set.of(), 20);
+        UserConstraints constraints = new UserConstraints(Set.of(), Set.of(), 60);
+
+        RecipeValidationResult result = recipeValidator.validate(USER_ID, recipe, constraints);
+
+        assertThat(result.violations())
+                .extracting(RecipeViolation::type)
+                .containsExactly(RecipeViolationType.RECENTLY_COOKED);
+    }
+
+    @Test
+    void doesNotFlagARecipeCookedBeforeTheFourteenDayWindow() {
+        cookDishNamed("Old favorite", LocalDate.now().minusDays(20));
+
+        RecipeCandidate recipe = new RecipeCandidate("Old favorite", List.of(), Set.of(), 20);
+        UserConstraints constraints = new UserConstraints(Set.of(), Set.of(), 60);
+
+        RecipeValidationResult result = recipeValidator.validate(USER_ID, recipe, constraints);
+
+        assertThat(result.valid()).isTrue();
+    }
+
     private static RecipeCandidate recipeOf(RecipeIngredient ingredient) {
         return new RecipeCandidate("Test recipe", List.of(ingredient), Set.of(), 20);
     }
@@ -169,5 +203,13 @@ class RecipeValidatorTest extends AbstractIntegrationTest {
 
     private void givePantryStock(Product product, BigDecimal quantity) {
         pantryService.addStock(USER_ID, product, quantity, Unit.GRAM, LocalDate.now());
+    }
+
+    private void cookDishNamed(String recipeName, LocalDate cookedAt) {
+        Recipe recipe = recipeRepository.save(new Recipe(USER_ID, recipeName, 20, 2, Set.of()));
+        CookedDish dish = new CookedDish(
+                USER_ID, recipe, DishCategory.UNKNOWN, new BigDecimal("2"),
+                null, null, null, null, cookedAt, cookedAt.plusDays(2), "key-" + recipeName + "-" + cookedAt);
+        cookedDishRepository.save(dish);
     }
 }

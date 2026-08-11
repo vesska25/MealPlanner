@@ -12,6 +12,7 @@ import de.mimosa_dev.MealPlanner.recipe.DishCategoryShelfLifeRepository;
 import de.mimosa_dev.MealPlanner.recipe.Recipe;
 import de.mimosa_dev.MealPlanner.recipe.RecipeIngredientEntity;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
+import de.mimosa_dev.MealPlanner.recipe.RecipeSuggestionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,7 @@ public class CookingService {
     private final DishCategoryResolver dishCategoryResolver;
     private final DishCategoryShelfLifeRepository dishCategoryShelfLifeRepository;
     private final NutritionCalculationService nutritionCalculationService;
+    private final RecipeSuggestionService recipeSuggestionService;
 
     public CookingService(
             RecipeRepository recipeRepository,
@@ -50,13 +52,15 @@ public class CookingService {
             CookedDishRepository cookedDishRepository,
             DishCategoryResolver dishCategoryResolver,
             DishCategoryShelfLifeRepository dishCategoryShelfLifeRepository,
-            NutritionCalculationService nutritionCalculationService) {
+            NutritionCalculationService nutritionCalculationService,
+            RecipeSuggestionService recipeSuggestionService) {
         this.recipeRepository = recipeRepository;
         this.pantryItemRepository = pantryItemRepository;
         this.cookedDishRepository = cookedDishRepository;
         this.dishCategoryResolver = dishCategoryResolver;
         this.dishCategoryShelfLifeRepository = dishCategoryShelfLifeRepository;
         this.nutritionCalculationService = nutritionCalculationService;
+        this.recipeSuggestionService = recipeSuggestionService;
     }
 
     private record ScaledIngredient(RecipeIngredientEntity ingredient, BigDecimal scaledQuantity, List<PantryItem> lockedRows) {
@@ -131,7 +135,13 @@ public class CookingService {
                 perPortionNutrition.map(NutritionValues::fatGrams).orElse(null),
                 perPortionNutrition.map(NutritionValues::carbsGrams).orElse(null),
                 cookedAt, cookedAt.plusDays(shelfLife.getShelfLifeDays()), idempotencyKey);
-        return cookedDishRepository.save(cookedDish);
+        CookedDish saved = cookedDishRepository.save(cookedDish);
+
+        // FR-24: cooking a recipe is the strongest signal that its suggestion (if it has an
+        // active one) was wanted — no-op if it doesn't (e.g. cooking something never suggested).
+        recipeSuggestionService.accept(userId, recipeId);
+
+        return saved;
     }
 
     // Same oldest-expiry-first logic as PantryService.consume — kept separate rather than

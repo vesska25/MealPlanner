@@ -26,8 +26,13 @@ import static org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTest
 @AutoConfigureTestDatabase(replace = NONE)
 public abstract class AbstractIntegrationTest {
 
+    // max_connections bumped from Postgres's default 100: every distinct @Import combination
+    // across the test suite gets its own Spring context and HikariCP pool against this same
+    // container (Spring's test-context cache holds several at once), and the growing number of
+    // test classes eventually exhausted the default (step 10: "sorry, too many clients already").
     @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine")
+            .withCommand("postgres", "-c", "max_connections=300");
 
     static {
         POSTGRES.start();

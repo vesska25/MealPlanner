@@ -10,4 +10,9 @@ public record AgentRunOutcome(boolean success, AgentRunStatus status, String mes
     public static AgentRunOutcome failure(AgentRunStatus status, String message) {
         return new AgentRunOutcome(false, status, message);
     }
+
+    /** AI-20a: the deterministic fallback succeeded — a real, usable result, just not a full pick. */
+    public static AgentRunOutcome fallback(String message) {
+        return new AgentRunOutcome(true, AgentRunStatus.FALLBACK_RESPONSE, message);
+    }
 }

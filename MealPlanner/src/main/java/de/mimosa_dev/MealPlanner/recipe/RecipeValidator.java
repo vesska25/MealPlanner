@@ -1,5 +1,6 @@
 package de.mimosa_dev.MealPlanner.recipe;
 
+import de.mimosa_dev.MealPlanner.cooking.CookedDishRepository;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemRepository;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemStatus;
 import de.mimosa_dev.MealPlanner.product.Product;
@@ -7,6 +8,7 @@ import de.mimosa_dev.MealPlanner.product.ProductRepository;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -29,12 +31,23 @@ import java.util.stream.Collectors;
 @Service
 public class RecipeValidator {
 
+    // FR-33: the horizon a dish stays excluded after being cooked. No escape hatch for
+    // "the user explicitly asked for a repeat" in Phase A (PRD step 10) — that would need a
+    // new flag threaded through the whole candidate/tool-schema chain for an edge case outside
+    // this step's focus; flagged as a known gap, not silently dropped.
+    private static final int RECENTLY_COOKED_HORIZON_DAYS = 14;
+
     private final ProductRepository productRepository;
     private final PantryItemRepository pantryItemRepository;
+    private final CookedDishRepository cookedDishRepository;
 
-    public RecipeValidator(ProductRepository productRepository, PantryItemRepository pantryItemRepository) {
+    public RecipeValidator(
+            ProductRepository productRepository,
+            PantryItemRepository pantryItemRepository,
+            CookedDishRepository cookedDishRepository) {
         this.productRepository = productRepository;
         this.pantryItemRepository = pantryItemRepository;
+        this.cookedDishRepository = cookedDishRepository;
     }
 
     public RecipeValidationResult validate(Long userId, RecipeCandidate recipe, UserConstraints constraints) {
@@ -53,8 +66,17 @@ public class RecipeValidator {
 
         checkEquipment(recipe, constraints, violations);
         checkCookTime(recipe, constraints, violations);
+        checkNotRecentlyCooked(userId, recipe, violations);
 
         return violations.isEmpty() ? RecipeValidationResult.success() : RecipeValidationResult.invalid(violations);
+    }
+
+    private void checkNotRecentlyCooked(Long userId, RecipeCandidate recipe, List<RecipeViolation> violations) {
+        LocalDate cutoff = LocalDate.now().minusDays(RECENTLY_COOKED_HORIZON_DAYS);
+        if (cookedDishRepository.existsRecentlyCookedByName(userId, recipe.name(), cutoff)) {
+            violations.add(new RecipeViolation(RecipeViolationType.RECENTLY_COOKED,
+                    "\"" + recipe.name() + "\" was cooked within the last " + RECENTLY_COOKED_HORIZON_DAYS + " days"));
+        }
     }
 
     private static void checkNotExcluded(Product product, UserConstraints constraints, List<RecipeViolation> violations) {

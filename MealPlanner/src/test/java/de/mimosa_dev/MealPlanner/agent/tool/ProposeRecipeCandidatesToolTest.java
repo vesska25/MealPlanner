@@ -8,6 +8,7 @@ import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductNormalizationService;
 import de.mimosa_dev.MealPlanner.recipe.RecipeCandidateScorer;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
+import de.mimosa_dev.MealPlanner.recipe.RecipeSuggestionService;
 import de.mimosa_dev.MealPlanner.recipe.RecipeValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @Import({
         ProposeRecipeCandidatesTool.class, RecipeValidator.class, RecipeCandidateScorer.class,
-        ProductNormalizationService.class, PantryService.class
+        ProductNormalizationService.class, PantryService.class, RecipeSuggestionService.class
 })
 class ProposeRecipeCandidatesToolTest extends AbstractIntegrationTest {
 

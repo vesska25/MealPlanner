@@ -32,6 +32,12 @@ class RecipeCandidateScorerTest extends AbstractIntegrationTest {
     @Autowired
     private PantryService pantryService;
 
+    @Autowired
+    private PreferenceSignalRepository preferenceSignalRepository;
+
+    @Autowired
+    private RecipeRepository recipeRepository;
+
     @BeforeEach
     void ensureUser() {
         ensureUserExists(USER_ID);
@@ -83,8 +89,9 @@ class RecipeCandidateScorerTest extends AbstractIntegrationTest {
         RecipeCandidate saltOnly = recipeOf(salt, new BigDecimal("5"), 20);
 
         // no expiry urgency (staples are skipped) and full coverage (an all-staple recipe has
-        // no trackable ingredients left, which counts as fully covered)
-        double expected = 0.30 * 1.0 + 0.15 * (1.0 - 20.0 / 60.0) + 0.05 * 0.5;
+        // no trackable ingredients left, which counts as fully covered); no preference signal
+        // recorded against this name, so that factor is neutral (1.0) too.
+        double expected = 0.30 * 1.0 + 0.15 * (1.0 - 20.0 / 60.0) + 0.05 * 1.0 + 0.05 * 0.5;
         assertThat(scorer.score(USER_ID, saltOnly)).isCloseTo(expected, within(0.001));
     }
 
@@ -92,8 +99,24 @@ class RecipeCandidateScorerTest extends AbstractIntegrationTest {
     void aRecipeWithNoIngredientsIsFullyCoveredWithNoUrgency() {
         RecipeCandidate noIngredients = new RecipeCandidate("Just boil water", List.of(), Set.of(), 5);
 
-        double expected = 0.30 * 1.0 + 0.15 * (1.0 - 5.0 / 60.0) + 0.05 * 0.5;
+        double expected = 0.30 * 1.0 + 0.15 * (1.0 - 5.0 / 60.0) + 0.05 * 1.0 + 0.05 * 0.5;
         assertThat(scorer.score(USER_ID, noIngredients)).isCloseTo(expected, within(0.001));
+    }
+
+    @Test
+    void aCandidateMatchingAPreviouslyRejectedRecipeNameScoresLowerThanAnUnmatchedOne() {
+        Product milk = seededProduct("milk");
+        pantryService.addStock(USER_ID, milk, new BigDecimal("1000"), Unit.GRAM, LocalDate.now().plusDays(30));
+
+        Recipe rejectedRecipe = recipeRepository.save(new Recipe(USER_ID, "Mushroom risotto", 20, 2, Set.of()));
+        preferenceSignalRepository.save(new PreferenceSignal(USER_ID, rejectedRecipe.getId(), "Mushroom risotto", RejectionReason.DISLIKE_DISH));
+
+        RecipeCandidate matchingName = new RecipeCandidate("Mushroom risotto",
+                List.of(new RecipeIngredient(milk.getId(), new BigDecimal("200"), Unit.GRAM)), Set.of(), 20);
+        RecipeCandidate differentName = new RecipeCandidate("Milk pudding",
+                List.of(new RecipeIngredient(milk.getId(), new BigDecimal("200"), Unit.GRAM)), Set.of(), 20);
+
+        assertThat(scorer.score(USER_ID, matchingName)).isLessThan(scorer.score(USER_ID, differentName));
     }
 
     private Product seededProduct(String canonicalName) {

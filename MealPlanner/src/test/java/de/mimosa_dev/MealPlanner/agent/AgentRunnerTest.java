@@ -14,15 +14,20 @@ import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.Usage;
 import com.anthropic.services.blocking.MessageService;
 import de.mimosa_dev.MealPlanner.agent.tool.AgentTool;
+import de.mimosa_dev.MealPlanner.recipe.MealPlanningFallbackService;
+import de.mimosa_dev.MealPlanner.recipe.Recipe;
+import de.mimosa_dev.MealPlanner.recipe.RecipeSuggestionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DataRetrievalFailureException;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.BiFunction;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +47,8 @@ class AgentRunnerTest {
     private ScenarioToolProvider toolProvider;
     private AgentRunRepository agentRunRepository;
     private ToolCallRepository toolCallRepository;
+    private MealPlanningFallbackService mealPlanningFallbackService;
+    private RecipeSuggestionService recipeSuggestionService;
     private AgentRunner runner;
 
     @BeforeEach
@@ -58,7 +65,12 @@ class AgentRunnerTest {
         when(toolCallRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(toolCallRepository.findByAgentRunIdAndSequenceNumber(any(), anyInt())).thenReturn(Optional.empty());
 
+        mealPlanningFallbackService = mock(MealPlanningFallbackService.class);
+        when(mealPlanningFallbackService.selectFallback(any())).thenReturn(Optional.empty());
+        recipeSuggestionService = mock(RecipeSuggestionService.class);
+
         runner = new AgentRunner(client, toolProvider, agentRunRepository, toolCallRepository,
+                mealPlanningFallbackService, recipeSuggestionService,
                 "claude-haiku-4-5", PANTRY_ASSISTANT_PROMPT, MEAL_PLANNING_PROMPT);
     }
 
@@ -140,6 +152,38 @@ class AgentRunnerTest {
                 .thenReturn(toolUseResponse("t1", "get_pantry_contents", Map.of()));
 
         AgentRunOutcome outcome = runner.run(USER_ID, AgentScenario.PANTRY_ASSISTANT, "user_message", "keep checking");
+
+        assertThat(outcome.success()).isFalse();
+        assertThat(outcome.status()).isEqualTo(AgentRunStatus.ITERATION_LIMIT);
+    }
+
+    @Test
+    void mealPlanningHittingTheIterationLimitFallsBackWhenAPickIsAvailable() {
+        AgentTool loopingTool = fakeTool("get_pantry_contents", false, (userId, input) -> "still going");
+        when(toolProvider.toolsFor(AgentScenario.MEAL_PLANNING)).thenReturn(List.of(loopingTool));
+        when(messageService.create(any(MessageCreateParams.class)))
+                .thenReturn(toolUseResponse("t1", "get_pantry_contents", Map.of()));
+
+        Recipe fallbackRecipe = new Recipe(USER_ID, "Old reliable pasta", 20, 2, Set.of());
+        when(mealPlanningFallbackService.selectFallback(USER_ID))
+                .thenReturn(Optional.of(new MealPlanningFallbackService.FallbackPick(fallbackRecipe, 0.7)));
+
+        AgentRunOutcome outcome = runner.run(USER_ID, AgentScenario.MEAL_PLANNING, "user_message", "what should I cook?");
+
+        assertThat(outcome.success()).isTrue();
+        assertThat(outcome.status()).isEqualTo(AgentRunStatus.FALLBACK_RESPONSE);
+        assertThat(outcome.message()).contains("Old reliable pasta");
+    }
+
+    @Test
+    void mealPlanningHittingTheIterationLimitWithNoFallbackAvailableStillReturnsIterationLimit() {
+        AgentTool loopingTool = fakeTool("get_pantry_contents", false, (userId, input) -> "still going");
+        when(toolProvider.toolsFor(AgentScenario.MEAL_PLANNING)).thenReturn(List.of(loopingTool));
+        when(messageService.create(any(MessageCreateParams.class)))
+                .thenReturn(toolUseResponse("t1", "get_pantry_contents", Map.of()));
+        // mealPlanningFallbackService already stubbed to return Optional.empty() in setUp()
+
+        AgentRunOutcome outcome = runner.run(USER_ID, AgentScenario.MEAL_PLANNING, "user_message", "what should I cook?");
 
         assertThat(outcome.success()).isFalse();
         assertThat(outcome.status()).isEqualTo(AgentRunStatus.ITERATION_LIMIT);

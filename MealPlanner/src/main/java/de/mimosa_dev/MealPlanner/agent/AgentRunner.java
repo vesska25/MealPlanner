@@ -13,6 +13,8 @@ import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.ToolResultBlockParam;
 import com.anthropic.models.messages.ToolUseBlock;
 import de.mimosa_dev.MealPlanner.agent.tool.AgentTool;
+import de.mimosa_dev.MealPlanner.recipe.MealPlanningFallbackService;
+import de.mimosa_dev.MealPlanner.recipe.RecipeSuggestionService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.dao.DataAccessException;
@@ -21,6 +23,7 @@ import org.springframework.util.StreamUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -52,6 +55,8 @@ public class AgentRunner {
     private final ScenarioToolProvider toolProvider;
     private final AgentRunRepository agentRunRepository;
     private final ToolCallRepository toolCallRepository;
+    private final MealPlanningFallbackService mealPlanningFallbackService;
+    private final RecipeSuggestionService recipeSuggestionService;
     private final String model;
     private final Map<AgentScenario, String> systemPrompts;
     private final Map<AgentScenario, String> systemPromptVersions;
@@ -61,6 +66,8 @@ public class AgentRunner {
             ScenarioToolProvider toolProvider,
             AgentRunRepository agentRunRepository,
             ToolCallRepository toolCallRepository,
+            MealPlanningFallbackService mealPlanningFallbackService,
+            RecipeSuggestionService recipeSuggestionService,
             @Value("${anthropic.model}") String model,
             @Value("classpath:prompts/pantry-assistant/system-prompt.txt") Resource pantryAssistantPrompt,
             @Value("classpath:prompts/meal-planning/system-prompt.txt") Resource mealPlanningPrompt) {
@@ -68,6 +75,8 @@ public class AgentRunner {
         this.toolProvider = toolProvider;
         this.agentRunRepository = agentRunRepository;
         this.toolCallRepository = toolCallRepository;
+        this.mealPlanningFallbackService = mealPlanningFallbackService;
+        this.recipeSuggestionService = recipeSuggestionService;
         this.model = model;
 
         this.systemPrompts = new EnumMap<>(AgentScenario.class);
@@ -172,6 +181,25 @@ public class AgentRunner {
                     .role(MessageParam.Role.USER)
                     .contentOfBlockParams(toolResults)
                     .build());
+        }
+
+        // AI-20a: the meal-planning scenario gets one more chance — a deterministic fallback —
+        // before giving up. Checked here rather than via a generic per-scenario strategy
+        // interface: AI-20a specifies this behavior for exactly one named scenario, and this
+        // project has only two scenarios total, so a pluggable registry would be speculative.
+        if (scenario == AgentScenario.MEAL_PLANNING) {
+            Optional<AgentRunOutcome> fallbackOutcome = mealPlanningFallbackService.selectFallback(userId)
+                    .map(pick -> {
+                        recipeSuggestionService.activate(userId, pick.recipe().getId(), BigDecimal.valueOf(pick.score()));
+                        return AgentRunOutcome.fallback(
+                                "I wasn't able to come up with something fresh in time, so here's a fallback pick "
+                                        + "from what you've made before that fits your pantry: " + pick.recipe().getName() + ".");
+                    });
+            if (fallbackOutcome.isPresent()) {
+                agentRun.finish(AgentRunStatus.FALLBACK_RESPONSE, fallbackOutcome.get().message());
+                agentRunRepository.save(agentRun);
+                return fallbackOutcome.get();
+            }
         }
 
         return finishWith(agentRun, AgentRunStatus.ITERATION_LIMIT,

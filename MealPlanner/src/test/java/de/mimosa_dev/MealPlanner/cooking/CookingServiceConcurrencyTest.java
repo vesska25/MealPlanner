@@ -12,6 +12,7 @@ import de.mimosa_dev.MealPlanner.recipe.DishCategoryResolver;
 import de.mimosa_dev.MealPlanner.recipe.Recipe;
 import de.mimosa_dev.MealPlanner.recipe.RecipeIngredientEntity;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
+import de.mimosa_dev.MealPlanner.recipe.RecipeSuggestionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Import({
         CookingService.class, DishCategoryResolver.class, NutritionCalculationService.class,
-        PantryService.class
+        PantryService.class, RecipeSuggestionService.class
 })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class CookingServiceConcurrencyTest extends AbstractIntegrationTest {

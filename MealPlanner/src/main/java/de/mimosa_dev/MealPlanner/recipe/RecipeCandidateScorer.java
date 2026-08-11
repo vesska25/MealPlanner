@@ -19,12 +19,12 @@ import java.util.Optional;
  * (FR-34); this is the code that ranks them — the model's own judgment of which is "best"
  * carries no weight (AI-07).
  *
- * <p>FR-31 names six factors. Three of them — leftover usage (needs the cooked-dish inventory
- * from step 8), preference alignment (needs preference_signal from step 10), and novelty
- * (needs meal_entry history from step 8) — have no real data source yet. They're kept in the
- * formula at their documented weight so the seam for wiring them in is explicit in the code,
- * but every candidate gets the same neutral contribution for them today, so they don't affect
- * relative ranking until real data exists to distinguish candidates by them.
+ * <p>FR-31 names six factors. Two of them — leftover usage (needs the cooked-dish inventory
+ * from step 8) and novelty (needs meal_entry history, still unassigned to any PRD step) — have
+ * no real data source yet and stay neutral. Preference alignment is wired as of step 10
+ * (Phase A): a candidate whose name matches a stored {@link PreferenceSignal} — i.e. the user
+ * previously rejected a dish by this name — scores lower on this factor, never zero elsewhere
+ * (FR-63: a soft signal lowers priority, it never excludes).
  */
 @Service
 public class RecipeCandidateScorer {
@@ -34,7 +34,7 @@ public class RecipeCandidateScorer {
     private static final double PANTRY_COVERAGE_WEIGHT = 0.30;
     private static final double COOK_TIME_WEIGHT = 0.15;
     private static final double LEFTOVER_USAGE_WEIGHT = 0.10; // always 0.0 until step 8
-    private static final double PREFERENCE_WEIGHT = 0.05;     // always 0.0 until step 10
+    private static final double PREFERENCE_WEIGHT = 0.05;
     private static final double NOVELTY_WEIGHT = 0.05;        // always 0.5 (neutral) until step 8
 
     private static final int URGENCY_HORIZON_DAYS = 14;
@@ -42,10 +42,15 @@ public class RecipeCandidateScorer {
 
     private final ProductRepository productRepository;
     private final PantryItemRepository pantryItemRepository;
+    private final PreferenceSignalRepository preferenceSignalRepository;
 
-    public RecipeCandidateScorer(ProductRepository productRepository, PantryItemRepository pantryItemRepository) {
+    public RecipeCandidateScorer(
+            ProductRepository productRepository,
+            PantryItemRepository pantryItemRepository,
+            PreferenceSignalRepository preferenceSignalRepository) {
         this.productRepository = productRepository;
         this.pantryItemRepository = pantryItemRepository;
+        this.preferenceSignalRepository = preferenceSignalRepository;
     }
 
     public double score(Long userId, RecipeCandidate recipe) {
@@ -53,8 +58,12 @@ public class RecipeCandidateScorer {
                 + PANTRY_COVERAGE_WEIGHT * pantryCoverage(userId, recipe)
                 + COOK_TIME_WEIGHT * cookTimeScore(recipe)
                 + LEFTOVER_USAGE_WEIGHT * 0.0
-                + PREFERENCE_WEIGHT * 0.0
+                + PREFERENCE_WEIGHT * preferenceScore(userId, recipe)
                 + NOVELTY_WEIGHT * 0.5;
+    }
+
+    private double preferenceScore(Long userId, RecipeCandidate recipe) {
+        return preferenceSignalRepository.existsByUserIdAndRecipeNameIgnoreCase(userId, recipe.name()) ? 0.0 : 1.0;
     }
 
     /**

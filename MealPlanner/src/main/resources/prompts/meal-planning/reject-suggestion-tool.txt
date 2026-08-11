@@ -1,0 +1,5 @@
+Reject the currently active suggestion on the user's behalf, with the reason they gave you.
+Use "NOT_TODAY" only when the user just doesn't want it today (not a lasting dislike) — that
+reason is never remembered long-term, unlike the others. After calling this, immediately call
+propose_recipe_candidates again with 2-3 fresh ideas that address the reason, rather than just
+acknowledging the rejection and stopping.
