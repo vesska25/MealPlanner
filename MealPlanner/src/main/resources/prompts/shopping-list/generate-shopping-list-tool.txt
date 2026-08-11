@@ -1,0 +1,5 @@
+Generates the current shopping list. Takes no input — everything is computed from the user's
+active meal suggestion and current pantry stock. Returns two groups: items definitely needed
+(missing ingredients for what's currently planned) and items to double-check (basic staples the
+system doesn't track, like salt or oil), each with an id you'll need later to record what
+happened to it. May also note that the pantry looks like it's running low overall.

@@ -31,6 +31,16 @@ public class PantryService {
      */
     @Transactional
     public PantryItem addStock(Long userId, Product product, BigDecimal quantity, Unit unit, LocalDate purchasedAt) {
+        return addStock(userId, product, quantity, unit, purchasedAt, false);
+    }
+
+    /**
+     * FR-45b: a position added via a shopping list's ALREADY_HAVE/PURCHASED resolution carries
+     * the list's suggested quantity as an estimate, not a precisely counted one.
+     */
+    @Transactional
+    public PantryItem addStock(
+            Long userId, Product product, BigDecimal quantity, Unit unit, LocalDate purchasedAt, boolean estimated) {
         PantryItem item = new PantryItem();
         item.setUserId(userId);
         item.setProduct(product);
@@ -39,6 +49,7 @@ public class PantryService {
         item.setPurchasedAt(purchasedAt);
         item.setExpiresAt(purchasedAt.plusDays(product.getDefaultShelfLifeDays()));
         item.setStatus(PantryItemStatus.ACTIVE);
+        item.setEstimated(estimated);
         return pantryItemRepository.save(item);
     }
 

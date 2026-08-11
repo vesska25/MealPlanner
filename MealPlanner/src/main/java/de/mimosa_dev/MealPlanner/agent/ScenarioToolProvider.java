@@ -4,10 +4,12 @@ import de.mimosa_dev.MealPlanner.agent.tool.AddPantryStockTool;
 import de.mimosa_dev.MealPlanner.agent.tool.AgentTool;
 import de.mimosa_dev.MealPlanner.agent.tool.ConsumePantryStockTool;
 import de.mimosa_dev.MealPlanner.agent.tool.DiscardPantryItemTool;
+import de.mimosa_dev.MealPlanner.agent.tool.GenerateShoppingListTool;
 import de.mimosa_dev.MealPlanner.agent.tool.GetPantryContentsTool;
 import de.mimosa_dev.MealPlanner.agent.tool.LookupProductsTool;
 import de.mimosa_dev.MealPlanner.agent.tool.ProposeRecipeCandidatesTool;
 import de.mimosa_dev.MealPlanner.agent.tool.RejectSuggestionTool;
+import de.mimosa_dev.MealPlanner.agent.tool.ResolveShoppingListItemsTool;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
@@ -31,7 +33,9 @@ public class ScenarioToolProvider {
             ConsumePantryStockTool consumePantryStockTool,
             DiscardPantryItemTool discardPantryItemTool,
             ProposeRecipeCandidatesTool proposeRecipeCandidatesTool,
-            RejectSuggestionTool rejectSuggestionTool) {
+            RejectSuggestionTool rejectSuggestionTool,
+            GenerateShoppingListTool generateShoppingListTool,
+            ResolveShoppingListItemsTool resolveShoppingListItemsTool) {
         this.toolsByScenario = new EnumMap<>(AgentScenario.class);
         toolsByScenario.put(AgentScenario.PANTRY_ASSISTANT, List.of(
                 lookupProductsTool, getPantryContentsTool, addPantryStockTool,
@@ -40,6 +44,10 @@ public class ScenarioToolProvider {
         // stock directly (AI-13: tool set is scoped to what the scenario actually needs).
         toolsByScenario.put(AgentScenario.MEAL_PLANNING, List.of(
                 lookupProductsTool, getPantryContentsTool, proposeRecipeCandidatesTool, rejectSuggestionTool));
+        // Shopping list mutates pantry only through resolve_shopping_list_items' own internal
+        // PantryService calls, never by exposing add/consume_pantry_stock directly.
+        toolsByScenario.put(AgentScenario.SHOPPING_LIST, List.of(
+                lookupProductsTool, getPantryContentsTool, generateShoppingListTool, resolveShoppingListItemsTool));
     }
 
     public List<AgentTool> toolsFor(AgentScenario scenario) {

@@ -61,6 +61,11 @@ public class PantryItem {
     @Column(name = "discard_reason")
     private DiscardReason discardReason;
 
+    // FR-45b: a position added via ALREADY_HAVE/PURCHASED on a shopping list carries the list's
+    // suggested quantity as an estimate, not a precisely counted one.
+    @Column(name = "is_estimated", nullable = false)
+    private boolean estimated = false;
+
     @Version
     @Column(name = "version", nullable = false)
     private Integer version;
@@ -140,6 +145,14 @@ public class PantryItem {
 
     public void setDiscardReason(DiscardReason discardReason) {
         this.discardReason = discardReason;
+    }
+
+    public boolean isEstimated() {
+        return estimated;
+    }
+
+    public void setEstimated(boolean estimated) {
+        this.estimated = estimated;
     }
 
     public Integer getVersion() {

@@ -1,0 +1,6 @@
+Records what happened to shopping list items after the trip, and/or logs extra purchases that
+weren't on the list at all. For items: PURCHASED and ALREADY_HAVE both add the item to the
+pantry using the list's suggested quantity as an estimate; NOT_BUYING and NOT_NEEDED don't
+change the pantry at all. For extra purchases: give the actual quantity and unit the user
+stated — these aren't estimates, so don't guess if they didn't say. Only include items the user
+actually told you about; leave everything else off rather than guessing a status.
