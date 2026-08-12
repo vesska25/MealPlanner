@@ -29,3 +29,6 @@ jwt:
   # without sourcing .env; HS256 needs at least 32 bytes. Always set JWT_SECRET for real use.
   secret: ${JWT_SECRET:dev-only-insecure-default-jwt-signing-secret-do-not-use-in-prod}
   ttl-hours: 24
+
+cors:
+  allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}

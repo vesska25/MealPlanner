@@ -6,6 +6,7 @@ import de.mimosa_dev.MealPlanner.auth.InviteCodeRepository;
 import de.mimosa_dev.MealPlanner.auth.dto.AuthResponse;
 import de.mimosa_dev.MealPlanner.auth.dto.RegisterRequest;
 import de.mimosa_dev.MealPlanner.common.Unit;
+import de.mimosa_dev.MealPlanner.cooking.controller.CookingExceptionHandler.CookingInfeasibleResponse;
 import de.mimosa_dev.MealPlanner.cooking.dto.CookedDishResponse;
 import de.mimosa_dev.MealPlanner.cooking.dto.ConfirmCookingRequest;
 import de.mimosa_dev.MealPlanner.cooking.dto.ConsumePortionsRequest;
@@ -108,6 +109,36 @@ class CookingControllerIntegrationTest extends AbstractApiIntegrationTest {
                 new ConsumePortionsRequest(new BigDecimal("1")), Void.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    @Test
+    void confirmingCookingWithInsufficientStockReturns400WithMissingIngredients() {
+        Registration registration = register();
+        Product milk = productRepository.findByCanonicalNameIgnoreCase("milk").orElseThrow();
+        pantryService.addStock(registration.userId(), milk, new BigDecimal("100"), Unit.GRAM, LocalDate.now());
+        Recipe recipe = new Recipe(registration.userId(), "Milk soup " + UUID.randomUUID(), 20, 2, Set.of());
+        recipe.addIngredient(new RecipeIngredientEntity(milk, new BigDecimal("200"), Unit.GRAM));
+        Recipe saved = recipeRepository.save(recipe);
+
+        ResponseEntity<CookingInfeasibleResponse> response = exchangeAuthenticated(
+                registration.token(), "/api/cooking/confirm", HttpMethod.POST,
+                new ConfirmCookingRequest(saved.getId(), new BigDecimal("2"), "key-" + UUID.randomUUID()),
+                CookingInfeasibleResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().missingIngredients()).isNotEmpty();
+    }
+
+    @Test
+    void consumingMorePortionsThanRemainingReturns400() {
+        Registration registration = register();
+        Long dishId = cookADish(registration);
+
+        ResponseEntity<String> response = exchangeAuthenticated(
+                registration.token(), "/api/cooked-dishes/" + dishId + "/consume", HttpMethod.POST,
+                new ConsumePortionsRequest(new BigDecimal("1000")), String.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
     @Test
