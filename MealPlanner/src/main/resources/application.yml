@@ -44,3 +44,10 @@ telegram:
   # "telegram.bot-token" from that env var directly, with no application.yml entry needed.
   bot-username: ${TELEGRAM_BOT_USERNAME:}
   internal-api-base-url: ${TELEGRAM_INTERNAL_API_BASE_URL:http://localhost:8080}
+  # FR-81 gives no concrete number for either of these — 15 minutes is a production-sane
+  # default that's still well within a single demo session; override low (e.g. 30000) for a
+  # snappy live demo. 1-day spoilage lead time is similarly a documented judgment call, not a
+  # PRD-stated number.
+  notification-check-interval-ms: ${TELEGRAM_NOTIFICATION_CHECK_INTERVAL_MS:900000}
+  spoilage-lead-time-days: ${TELEGRAM_SPOILAGE_LEAD_TIME_DAYS:1}
+  shopping-reminder-cooldown-hours: ${TELEGRAM_SHOPPING_REMINDER_COOLDOWN_HOURS:24}

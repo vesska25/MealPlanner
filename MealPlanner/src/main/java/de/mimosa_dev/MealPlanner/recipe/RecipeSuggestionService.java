@@ -1,5 +1,6 @@
 package de.mimosa_dev.MealPlanner.recipe;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,14 +19,17 @@ public class RecipeSuggestionService {
     private final RecipeSuggestionRepository recipeSuggestionRepository;
     private final PreferenceSignalRepository preferenceSignalRepository;
     private final RecipeRepository recipeRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public RecipeSuggestionService(
             RecipeSuggestionRepository recipeSuggestionRepository,
             PreferenceSignalRepository preferenceSignalRepository,
-            RecipeRepository recipeRepository) {
+            RecipeRepository recipeRepository,
+            ApplicationEventPublisher eventPublisher) {
         this.recipeSuggestionRepository = recipeSuggestionRepository;
         this.preferenceSignalRepository = preferenceSignalRepository;
         this.recipeRepository = recipeRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     /** Expires whatever was previously {@code ACTIVE} for this user, then activates {@code recipeId}. */
@@ -36,7 +40,16 @@ public class RecipeSuggestionService {
                     active.expire();
                     recipeSuggestionRepository.save(active);
                 });
-        return recipeSuggestionRepository.save(new RecipeSuggestion(userId, recipeId, score));
+        RecipeSuggestion saved = recipeSuggestionRepository.save(new RecipeSuggestion(userId, recipeId, score));
+
+        // FR-81 (notification type 1). Published unconditionally — SuggestionActivatedEventListener
+        // (step 12 Phase C, telegram package) is the one that decides whether a linked Telegram
+        // account exists to notify; this package stays unaware Telegram exists at all.
+        Recipe recipe = recipeRepository.findById(recipeId)
+                .orElseThrow(() -> new NoSuchElementException("Recipe " + recipeId + " not found"));
+        eventPublisher.publishEvent(new SuggestionActivatedEvent(userId, recipeId, recipe.getName(), recipe.getBasePortions(), score));
+
+        return saved;
     }
 
     /**

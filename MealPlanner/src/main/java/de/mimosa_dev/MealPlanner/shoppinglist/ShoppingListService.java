@@ -103,7 +103,8 @@ public class ShoppingListService {
         return new GeneratedShoppingList(saved, isPantryRunningLow(userId));
     }
 
-    private boolean isPantryRunningLow(Long userId) {
+    /** Public since step 12: reused directly by TelegramNotificationScheduler's shopping-reminder check (FR-81). */
+    public boolean isPantryRunningLow(Long userId) {
         List<PantryItem> active = pantryItemRepository.findByUserIdAndStatusOrderByExpiresAtAsc(userId, PantryItemStatus.ACTIVE)
                 .stream()
                 .filter(item -> !item.getProduct().isStaple())
