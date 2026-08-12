@@ -3,6 +3,10 @@ import { LoginPage } from './auth/LoginPage'
 import { RegisterPage } from './auth/RegisterPage'
 import { AppShell } from './layout/AppShell'
 import { ProtectedRoute } from './layout/ProtectedRoute'
+import { PantryPage } from './pantry/PantryPage'
+import { PantryAssistantPage } from './chat/PantryAssistantPage'
+import { MealPlanningPage } from './chat/MealPlanningPage'
+import { ShoppingListPage } from './chat/ShoppingListPage'
 
 function ComingSoon({ label }: { label: string }) {
   return <p className="text-gray-500">{label} — coming soon.</p>
@@ -17,10 +21,10 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/" element={<Navigate to="/pantry" replace />} />
-          <Route path="/pantry" element={<ComingSoon label="Pantry" />} />
-          <Route path="/chat/pantry-assistant" element={<ComingSoon label="Pantry Assistant chat" />} />
-          <Route path="/chat/meal-planning" element={<ComingSoon label="Meal Planning chat" />} />
-          <Route path="/chat/shopping-list" element={<ComingSoon label="Shopping List chat" />} />
+          <Route path="/pantry" element={<PantryPage />} />
+          <Route path="/chat/pantry-assistant" element={<PantryAssistantPage />} />
+          <Route path="/chat/meal-planning" element={<MealPlanningPage />} />
+          <Route path="/chat/shopping-list" element={<ShoppingListPage />} />
           <Route path="/suggestions" element={<ComingSoon label="Suggestions" />} />
           <Route path="/cooked-dishes" element={<ComingSoon label="Cooked Dishes" />} />
           <Route path="/account" element={<ComingSoon label="Account" />} />

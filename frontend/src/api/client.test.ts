@@ -40,11 +40,16 @@ describe('apiFetch', () => {
   it('throws an ApiError carrying the status and body on other non-2xx responses', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('invalid invite code', { status: 400 })))
 
-    const error = await apiFetch('/api/auth/register').catch((e) => e as ApiError)
+    let caught: ApiError | undefined
+    try {
+      await apiFetch('/api/auth/register')
+    } catch (e) {
+      caught = e as ApiError
+    }
 
-    expect(error).toBeInstanceOf(ApiError)
-    expect(error.status).toBe(400)
-    expect(error.body).toBe('invalid invite code')
+    expect(caught).toBeInstanceOf(ApiError)
+    expect(caught?.status).toBe(400)
+    expect(caught?.body).toBe('invalid invite code')
   })
 
   it('returns undefined for a 204 response', async () => {
