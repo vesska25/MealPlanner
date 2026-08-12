@@ -6,7 +6,12 @@ import de.mimosa_dev.MealPlanner.auth.InviteCodeRepository;
 import de.mimosa_dev.MealPlanner.auth.dto.AuthResponse;
 import de.mimosa_dev.MealPlanner.auth.dto.RegisterRequest;
 import de.mimosa_dev.MealPlanner.common.Unit;
+import de.mimosa_dev.MealPlanner.pantry.DiscardReason;
+import de.mimosa_dev.MealPlanner.pantry.PantryItem;
+import de.mimosa_dev.MealPlanner.pantry.PantryItemRepository;
+import de.mimosa_dev.MealPlanner.pantry.PantryItemStatus;
 import de.mimosa_dev.MealPlanner.pantry.PantryService;
+import de.mimosa_dev.MealPlanner.pantry.dto.DiscardPantryItemRequest;
 import de.mimosa_dev.MealPlanner.pantry.dto.PantryItemResponse;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductRepository;
@@ -42,6 +47,55 @@ class PantryControllerIntegrationTest extends AbstractApiIntegrationTest {
 
     @Autowired
     private PantryService pantryService;
+
+    @Autowired
+    private PantryItemRepository pantryItemRepository;
+
+    @Test
+    void discardingAnActiveItemMarksItDiscardedWithAReason() {
+        Registration registration = register();
+        Product milk = productRepository.findByCanonicalNameIgnoreCase("milk").orElseThrow();
+        PantryItem item = pantryService.addStock(registration.userId(), milk, new BigDecimal("500"), Unit.GRAM, LocalDate.now());
+
+        ResponseEntity<Void> response = postDiscard(registration.token(), item.getId(), DiscardReason.BOUGHT_TOO_MUCH);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        PantryItem reloaded = pantryItemRepository.findById(item.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(PantryItemStatus.DISCARDED);
+        assertThat(reloaded.getDiscardReason()).isEqualTo(DiscardReason.BOUGHT_TOO_MUCH);
+    }
+
+    @Test
+    void discardingAnAlreadyDiscardedItemIsAConflict() {
+        Registration registration = register();
+        Product milk = productRepository.findByCanonicalNameIgnoreCase("milk").orElseThrow();
+        PantryItem item = pantryService.addStock(registration.userId(), milk, new BigDecimal("500"), Unit.GRAM, LocalDate.now());
+        pantryService.discard(registration.userId(), item.getId(), DiscardReason.EXPIRED_EARLY);
+
+        ResponseEntity<Void> response = postDiscard(registration.token(), item.getId(), DiscardReason.BOUGHT_TOO_MUCH);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    void discardingAnotherUsersItemIsNotFound() {
+        Registration owner = register();
+        Registration someoneElse = register();
+        Product milk = productRepository.findByCanonicalNameIgnoreCase("milk").orElseThrow();
+        PantryItem item = pantryService.addStock(owner.userId(), milk, new BigDecimal("500"), Unit.GRAM, LocalDate.now());
+
+        ResponseEntity<Void> response = postDiscard(someoneElse.token(), item.getId(), DiscardReason.BOUGHT_TOO_MUCH);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    private ResponseEntity<Void> postDiscard(String token, Long itemId, DiscardReason reason) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        return restTemplate.exchange(
+                "/api/pantry/" + itemId + "/discard", HttpMethod.POST,
+                new HttpEntity<>(new DiscardPantryItemRequest(reason), headers), Void.class);
+    }
 
     @Test
     void listsOnlyTheAuthenticatedUsersActiveItems() {
