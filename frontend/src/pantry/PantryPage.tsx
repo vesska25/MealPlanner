@@ -1,28 +1,31 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { usePantryQuery } from './usePantryQuery'
-import { useSendMessage } from '../chat/useSendMessage'
-import { AgentStatusBadge } from '../chat/AgentStatusBadge'
+import { useDiscardPantryItem } from './useDiscardPantryItem'
 import { extractErrorMessage } from '../api/client'
-import type { AgentRunStatus } from '../api/types'
+import type { DiscardReason } from '../api/types'
+
+const DISCARD_REASONS: { value: DiscardReason; label: string }[] = [
+  { value: 'EXPIRED_EARLY', label: 'Expired early' },
+  { value: 'DIDNT_COOK_IN_TIME', label: "Didn't cook in time" },
+  { value: 'BOUGHT_TOO_MUCH', label: 'Bought too much' },
+]
 
 export function PantryPage() {
   const { data: items, isLoading, isError, error } = usePantryQuery()
-  const markSpoiled = useSendMessage('PANTRY_ASSISTANT')
-  const queryClient = useQueryClient()
-  const [activeItemId, setActiveItemId] = useState<number | null>(null)
-  const [reply, setReply] = useState<{ text: string; status?: AgentRunStatus } | null>(null)
+  const discardItem = useDiscardPantryItem()
+  const [openItemId, setOpenItemId] = useState<number | null>(null)
+  const [reason, setReason] = useState<DiscardReason>('EXPIRED_EARLY')
+  const [feedback, setFeedback] = useState<string | null>(null)
 
-  function handleMarkSpoiled(productName: string, itemId: number) {
-    setActiveItemId(itemId)
-    setReply(null)
-    markSpoiled.mutate(`Please mark my ${productName} as spoiled and discard it.`, {
-      onSuccess: (response) => {
-        setReply({ text: response.message, status: response.status })
-        queryClient.invalidateQueries({ queryKey: ['pantry'] })
+  function handleDiscard(itemId: number) {
+    setFeedback(null)
+    discardItem.mutate(
+      { itemId, reason },
+      {
+        onSuccess: () => setOpenItemId(null),
+        onError: (err) => setFeedback(extractErrorMessage(err)),
       },
-      onError: (err) => setReply({ text: extractErrorMessage(err) }),
-    })
+    )
   }
 
   if (isLoading) return <p className="text-gray-500">Loading pantry…</p>
@@ -56,30 +59,51 @@ export function PantryPage() {
                 </td>
                 <td className="py-2">{item.expiresAt}</td>
                 <td className="py-2 text-right">
-                  <button
-                    type="button"
-                    onClick={() => handleMarkSpoiled(item.productName, item.id)}
-                    disabled={markSpoiled.isPending && activeItemId === item.id}
-                    className="text-sm text-red-600 hover:underline disabled:opacity-50"
-                  >
-                    {markSpoiled.isPending && activeItemId === item.id ? 'Marking…' : 'Mark spoiled'}
-                  </button>
+                  {openItemId === item.id ? (
+                    <div className="flex items-center justify-end gap-2">
+                      <select
+                        value={reason}
+                        onChange={(event) => setReason(event.target.value as DiscardReason)}
+                        className="rounded border border-gray-300 px-2 py-1 text-sm"
+                      >
+                        {DISCARD_REASONS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => handleDiscard(item.id)}
+                        disabled={discardItem.isPending}
+                        className="rounded bg-red-600 px-2 py-1 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        {discardItem.isPending ? 'Discarding…' : 'Confirm'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOpenItemId(null)}
+                        className="text-sm text-gray-500 hover:underline"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setOpenItemId(item.id)}
+                      className="text-sm text-red-600 hover:underline"
+                    >
+                      Mark spoiled
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
-      {reply && (
-        <div className="rounded border border-gray-200 bg-gray-50 p-3 text-sm">
-          <p>{reply.text}</p>
-          {reply.status && (
-            <div className="mt-1">
-              <AgentStatusBadge status={reply.status} />
-            </div>
-          )}
-        </div>
-      )}
+      {feedback && <p className="text-sm text-red-600">{feedback}</p>}
     </div>
   )
 }

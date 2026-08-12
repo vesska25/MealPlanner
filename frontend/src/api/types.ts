@@ -1,5 +1,14 @@
 export type AgentScenario = 'PANTRY_ASSISTANT' | 'MEAL_PLANNING' | 'SHOPPING_LIST'
 
+export type RejectionReason =
+  | 'DISLIKE_DISH'
+  | 'NOT_TODAY'
+  | 'TAKES_TOO_LONG'
+  | 'DONT_WANT_CATEGORY'
+  | 'TIRED_OF_INGREDIENT'
+
+export type DiscardReason = 'EXPIRED_EARLY' | 'DIDNT_COOK_IN_TIME' | 'BOUGHT_TOO_MUCH'
+
 export type AgentRunStatus =
   | 'RUNNING'
   | 'FINAL_RESPONSE'
@@ -158,4 +167,27 @@ export interface AccountExportResponse {
   recipes: RecipeExport[]
   cookedDishes: CookedDishExport[]
   agentRuns: AgentRunExport[]
+}
+
+export interface RejectSuggestionRequest {
+  reason: RejectionReason
+}
+
+export interface DiscardPantryItemRequest {
+  reason: DiscardReason
+}
+
+export interface ShoppingListItemResponse {
+  id: number
+  productName: string
+  quantity: number
+  unit: string
+  block: 'DEFINITELY_NEED' | 'CHECK_MAYBE_OUT'
+  status: 'PENDING' | 'PURCHASED' | 'ALREADY_HAVE' | 'NOT_BUYING' | 'NOT_NEEDED'
+}
+
+export interface ShoppingListResponse {
+  id: number
+  createdAt: string
+  items: ShoppingListItemResponse[]
 }

@@ -15,7 +15,7 @@ interface ChatMessage {
  * (AgentChatController never threads conversation history server-side), so the transcript here
  * is purely local UI state — never persisted or resent.
  */
-export function ChatPanel({ scenario }: { scenario: AgentScenario }) {
+export function ChatPanel({ scenario, onMessageSent }: { scenario: AgentScenario; onMessageSent?: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [draft, setDraft] = useState('')
   const sendMessage = useSendMessage(scenario)
@@ -31,6 +31,7 @@ export function ChatPanel({ scenario }: { scenario: AgentScenario }) {
     sendMessage.mutate(userMessage, {
       onSuccess: (response) => {
         setMessages((prev) => [...prev, { role: 'agent', text: response.message, status: response.status }])
+        onMessageSent?.()
       },
       onError: (error) => {
         setMessages((prev) => [...prev, { role: 'agent', text: extractErrorMessage(error) }])
