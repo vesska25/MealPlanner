@@ -32,3 +32,15 @@ jwt:
 
 cors:
   allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
+
+telegram:
+  # Step 12: bot-token deliberately has NO entry here (unlike anthropic.api-key's blanket
+  # ${...:} default) — every Telegram-facing bean is @ConditionalOnProperty(name =
+  # "telegram.bot-token") gated, and that condition only checks whether the property is
+  # ABSENT, not whether it's blank. Giving it an always-present empty-string default here would
+  # make the condition true even with no token configured. Leaving it undeclared means the
+  # property genuinely doesn't exist unless TELEGRAM_BOT_TOKEN is set — Spring Boot's automatic
+  # relaxed environment-variable binding (SystemEnvironmentPropertySource) resolves
+  # "telegram.bot-token" from that env var directly, with no application.yml entry needed.
+  bot-username: ${TELEGRAM_BOT_USERNAME:}
+  internal-api-base-url: ${TELEGRAM_INTERNAL_API_BASE_URL:http://localhost:8080}
