@@ -9,10 +9,7 @@ import { MealPlanningPage } from './chat/MealPlanningPage'
 import { ShoppingListPage } from './chat/ShoppingListPage'
 import { SuggestionPage } from './suggestions/SuggestionPage'
 import { CookedDishesPage } from './cooking/CookedDishesPage'
-
-function ComingSoon({ label }: { label: string }) {
-  return <p className="text-gray-500">{label} — coming soon.</p>
-}
+import { AccountPage } from './account/AccountPage'
 
 function App() {
   return (
@@ -29,7 +26,7 @@ function App() {
           <Route path="/chat/shopping-list" element={<ShoppingListPage />} />
           <Route path="/suggestions" element={<SuggestionPage />} />
           <Route path="/cooked-dishes" element={<CookedDishesPage />} />
-          <Route path="/account" element={<ComingSoon label="Account" />} />
+          <Route path="/account" element={<AccountPage />} />
         </Route>
       </Route>
     </Routes>
