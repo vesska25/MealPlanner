@@ -1,5 +1,6 @@
 package de.mimosa_dev.MealPlanner.cooking;
 
+import de.mimosa_dev.MealPlanner.mealentry.MealEntryService;
 import de.mimosa_dev.MealPlanner.pantry.PantryItem;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemRepository;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemStatus;
@@ -45,6 +46,7 @@ public class CookingService {
     private final DishCategoryShelfLifeRepository dishCategoryShelfLifeRepository;
     private final NutritionCalculationService nutritionCalculationService;
     private final RecipeSuggestionService recipeSuggestionService;
+    private final MealEntryService mealEntryService;
 
     public CookingService(
             RecipeRepository recipeRepository,
@@ -53,7 +55,8 @@ public class CookingService {
             DishCategoryResolver dishCategoryResolver,
             DishCategoryShelfLifeRepository dishCategoryShelfLifeRepository,
             NutritionCalculationService nutritionCalculationService,
-            RecipeSuggestionService recipeSuggestionService) {
+            RecipeSuggestionService recipeSuggestionService,
+            MealEntryService mealEntryService) {
         this.recipeRepository = recipeRepository;
         this.pantryItemRepository = pantryItemRepository;
         this.cookedDishRepository = cookedDishRepository;
@@ -61,6 +64,7 @@ public class CookingService {
         this.dishCategoryShelfLifeRepository = dishCategoryShelfLifeRepository;
         this.nutritionCalculationService = nutritionCalculationService;
         this.recipeSuggestionService = recipeSuggestionService;
+        this.mealEntryService = mealEntryService;
     }
 
     private record ScaledIngredient(RecipeIngredientEntity ingredient, BigDecimal scaledQuantity, List<PantryItem> lockedRows) {
@@ -140,6 +144,14 @@ public class CookingService {
         // FR-24: cooking a recipe is the strongest signal that its suggestion (if it has an
         // active one) was wanted — no-op if it doesn't (e.g. cooking something never suggested).
         recipeSuggestionService.accept(userId, recipeId);
+
+        // FR-50/FR-82/INV-13: a COOKED_DISH meal_entry is created as a side effect of a real
+        // cooking confirmation, never accepted as client input — this is what guarantees the
+        // reference is always valid, and it satisfies FR-82's "cooking confirmation" wording
+        // with no new bot-facing REST call needed (the bot's inline button already calls this
+        // same endpoint). Sitting after the idempotency short-circuit above means a retried
+        // confirmation creates no duplicate MealEntry either.
+        mealEntryService.recordCookedDish(userId, saved.getId(), actualPortions);
 
         return saved;
     }

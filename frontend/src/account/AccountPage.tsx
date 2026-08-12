@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query'
 import { apiFetch, extractErrorMessage } from '../api/client'
 import type { AccountExportResponse } from '../api/types'
 import { useAuth } from '../auth/useAuth'
+import { TelegramSection } from '../telegram/TelegramSection'
 
 const DELETE_CONFIRMATION_PHRASE = 'DELETE'
 
@@ -52,6 +53,8 @@ export function AccountPage() {
         </button>
         {exportData.isError && <p className="text-sm text-red-600">{extractErrorMessage(exportData.error)}</p>}
       </section>
+
+      <TelegramSection />
 
       <section className="flex flex-col gap-2 rounded border border-red-200 bg-red-50 p-4">
         <h2 className="font-semibold text-red-900">Delete my account</h2>

@@ -2,6 +2,7 @@ package de.mimosa_dev.MealPlanner.cooking;
 
 import de.mimosa_dev.MealPlanner.AbstractIntegrationTest;
 import de.mimosa_dev.MealPlanner.common.Unit;
+import de.mimosa_dev.MealPlanner.mealentry.MealEntryService;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemRepository;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemStatus;
 import de.mimosa_dev.MealPlanner.pantry.PantryService;
@@ -44,7 +45,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Import({
         CookingService.class, DishCategoryResolver.class, NutritionCalculationService.class,
-        PantryService.class, RecipeSuggestionService.class
+        PantryService.class, RecipeSuggestionService.class, MealEntryService.class
 })
 @Transactional(propagation = Propagation.NOT_SUPPORTED)
 class CookingServiceConcurrencyTest extends AbstractIntegrationTest {

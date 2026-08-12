@@ -177,6 +177,18 @@ export interface DiscardPantryItemRequest {
   reason: DiscardReason
 }
 
+export interface GenerateLinkCodeResponse {
+  code: string
+  deepLink: string
+  expiresAt: string
+}
+
+export interface TelegramLinkStatusResponse {
+  linked: boolean
+  telegramUserId: number | null
+  linkedAt: string | null
+}
+
 export interface ShoppingListItemResponse {
   id: number
   productName: string

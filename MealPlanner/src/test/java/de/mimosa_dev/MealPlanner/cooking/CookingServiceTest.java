@@ -2,6 +2,9 @@ package de.mimosa_dev.MealPlanner.cooking;
 
 import de.mimosa_dev.MealPlanner.AbstractIntegrationTest;
 import de.mimosa_dev.MealPlanner.common.Unit;
+import de.mimosa_dev.MealPlanner.mealentry.MealEntryRepository;
+import de.mimosa_dev.MealPlanner.mealentry.MealEntryService;
+import de.mimosa_dev.MealPlanner.mealentry.MealEntryType;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemRepository;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemStatus;
 import de.mimosa_dev.MealPlanner.pantry.PantryService;
@@ -28,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @Import({
         CookingService.class, DishCategoryResolver.class, NutritionCalculationService.class,
-        PantryService.class, RecipeSuggestionService.class
+        PantryService.class, RecipeSuggestionService.class, MealEntryService.class
 })
 class CookingServiceTest extends AbstractIntegrationTest {
 
@@ -48,6 +51,9 @@ class CookingServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private PantryItemRepository pantryItemRepository;
+
+    @Autowired
+    private MealEntryRepository mealEntryRepository;
 
     @Autowired
     private EntityManager entityManager;
@@ -76,6 +82,14 @@ class CookingServiceTest extends AbstractIntegrationTest {
         assertThat(dish.getKcalPerPortion()).isNotNull().isPositive();
         assertThat(stockOf(milk)).isEqualByComparingTo("800");
         assertThat(stockOf(rice)).isEqualByComparingTo("400");
+
+        // FR-50/INV-13: confirming cooking creates exactly one COOKED_DISH meal_entry as a side effect.
+        var mealEntries = mealEntryRepository.findAll().stream()
+                .filter(entry -> entry.getUserId().equals(USER_ID) && entry.getCookedDishId() != null && entry.getCookedDishId().equals(dish.getId()))
+                .toList();
+        assertThat(mealEntries).hasSize(1);
+        assertThat(mealEntries.getFirst().getType()).isEqualTo(MealEntryType.COOKED_DISH);
+        assertThat(mealEntries.getFirst().getPortionsEaten()).isEqualByComparingTo("2");
     }
 
     @Test
@@ -156,6 +170,13 @@ class CookingServiceTest extends AbstractIntegrationTest {
         assertThat(second.getId()).isEqualTo(first.getId());
         assertThat(stockOf(milk)).isEqualByComparingTo("800"); // deducted once, not twice
         assertThat(cookedDishCount()).isEqualTo(1);
+
+        // The idempotency short-circuit sits before the MealEntry side effect too — a retried
+        // confirmation must not create a second meal_entry row either.
+        long mealEntryCount = mealEntryRepository.findAll().stream()
+                .filter(entry -> entry.getUserId().equals(USER_ID) && first.getId().equals(entry.getCookedDishId()))
+                .count();
+        assertThat(mealEntryCount).isEqualTo(1);
     }
 
     @Test
