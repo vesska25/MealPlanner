@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 /**
  * FR-04 (export everything a user owns as JSON) and FR-05 (cascading, irreversible deletion).
@@ -87,9 +88,14 @@ public class AccountService {
                 .map(ingredient -> new RecipeIngredientExport(
                         ingredient.getProduct().getCanonicalName(), ingredient.getQuantity(), ingredient.getUnit()))
                 .toList();
+        // Copy out of the lazy Hibernate collection while the session is still open (same
+        // reason ingredients is materialized via .toList() above) — otherwise this stays an
+        // uninitialized proxy that throws LazyInitializationException when Jackson serializes
+        // the response after the @Transactional method (and its session) has already returned.
+        Set<String> requiredEquipment = Set.copyOf(recipe.getRequiredEquipment());
         return new RecipeExport(
                 recipe.getId(), recipe.getName(), recipe.getCookTimeMinutes(), recipe.getBasePortions(),
-                recipe.getRequiredEquipment(), ingredients);
+                requiredEquipment, ingredients);
     }
 
     private static CookedDishExport toExport(CookedDish dish) {

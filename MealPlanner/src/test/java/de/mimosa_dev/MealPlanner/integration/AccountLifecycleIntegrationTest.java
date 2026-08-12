@@ -11,6 +11,9 @@ import de.mimosa_dev.MealPlanner.common.Unit;
 import de.mimosa_dev.MealPlanner.pantry.PantryService;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductRepository;
+import de.mimosa_dev.MealPlanner.recipe.Recipe;
+import de.mimosa_dev.MealPlanner.recipe.RecipeIngredientEntity;
+import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.resttestclient.TestRestTemplate;
@@ -22,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,6 +52,27 @@ class AccountLifecycleIntegrationTest extends AbstractApiIntegrationTest {
 
     @Autowired
     private ProductRepository productRepository;
+
+    @Autowired
+    private RecipeRepository recipeRepository;
+
+    @Test
+    void exportingARecipeWithRequiredEquipmentDoesNotThrowLazyInitializationException() {
+        String email = freshEmail();
+        String token = register(email, "password123", freshInviteCode()).getBody().token();
+        Long userId = appUserRepository.findByEmail(email).orElseThrow().getId();
+        Product milk = productRepository.findByCanonicalNameIgnoreCase("milk").orElseThrow();
+        Recipe recipe = new Recipe(userId, "Milk soup", 20, 2, Set.of("pan", "stovetop"));
+        recipe.addIngredient(new RecipeIngredientEntity(milk, new BigDecimal("200"), Unit.GRAM));
+        recipeRepository.save(recipe);
+
+        ResponseEntity<AccountExportResponse> response =
+                exchangeAuthenticated(token, "/api/account/export", HttpMethod.GET, AccountExportResponse.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody().recipes()).hasSize(1);
+        assertThat(response.getBody().recipes().getFirst().requiredEquipment()).containsExactlyInAnyOrder("pan", "stovetop");
+    }
 
     @Test
     void registeringWithAValidInviteReturnsATokenAndConsumesTheCode() {
