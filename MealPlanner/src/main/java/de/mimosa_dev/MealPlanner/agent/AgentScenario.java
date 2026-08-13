@@ -6,5 +6,6 @@ package de.mimosa_dev.MealPlanner.agent;
 public enum AgentScenario {
     PANTRY_ASSISTANT,
     MEAL_PLANNING,
-    SHOPPING_LIST
+    SHOPPING_LIST,
+    ONBOARDING
 }

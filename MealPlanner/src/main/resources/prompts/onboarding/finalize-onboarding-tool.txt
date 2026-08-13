@@ -1,0 +1,3 @@
+Complete onboarding and create the user's real profile from the saved draft. Only call this once
+update_onboarding_draft has told you every required field is collected — calling it earlier
+returns an error listing what's still missing, so you can go ask for that instead.

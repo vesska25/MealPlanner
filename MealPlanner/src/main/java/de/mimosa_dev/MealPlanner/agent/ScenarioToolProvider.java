@@ -4,12 +4,14 @@ import de.mimosa_dev.MealPlanner.agent.tool.AddPantryStockTool;
 import de.mimosa_dev.MealPlanner.agent.tool.AgentTool;
 import de.mimosa_dev.MealPlanner.agent.tool.ConsumePantryStockTool;
 import de.mimosa_dev.MealPlanner.agent.tool.DiscardPantryItemTool;
+import de.mimosa_dev.MealPlanner.agent.tool.FinalizeOnboardingTool;
 import de.mimosa_dev.MealPlanner.agent.tool.GenerateShoppingListTool;
 import de.mimosa_dev.MealPlanner.agent.tool.GetPantryContentsTool;
 import de.mimosa_dev.MealPlanner.agent.tool.LookupProductsTool;
 import de.mimosa_dev.MealPlanner.agent.tool.ProposeRecipeCandidatesTool;
 import de.mimosa_dev.MealPlanner.agent.tool.RejectSuggestionTool;
 import de.mimosa_dev.MealPlanner.agent.tool.ResolveShoppingListItemsTool;
+import de.mimosa_dev.MealPlanner.agent.tool.UpdateOnboardingDraftTool;
 import org.springframework.stereotype.Component;
 
 import java.util.EnumMap;
@@ -35,7 +37,9 @@ public class ScenarioToolProvider {
             ProposeRecipeCandidatesTool proposeRecipeCandidatesTool,
             RejectSuggestionTool rejectSuggestionTool,
             GenerateShoppingListTool generateShoppingListTool,
-            ResolveShoppingListItemsTool resolveShoppingListItemsTool) {
+            ResolveShoppingListItemsTool resolveShoppingListItemsTool,
+            UpdateOnboardingDraftTool updateOnboardingDraftTool,
+            FinalizeOnboardingTool finalizeOnboardingTool) {
         this.toolsByScenario = new EnumMap<>(AgentScenario.class);
         toolsByScenario.put(AgentScenario.PANTRY_ASSISTANT, List.of(
                 lookupProductsTool, getPantryContentsTool, addPantryStockTool,
@@ -48,6 +52,9 @@ public class ScenarioToolProvider {
         // PantryService calls, never by exposing add/consume_pantry_stock directly.
         toolsByScenario.put(AgentScenario.SHOPPING_LIST, List.of(
                 lookupProductsTool, getPantryContentsTool, generateShoppingListTool, resolveShoppingListItemsTool));
+        // Onboarding has no pantry/recipe/shopping tools at all (AI-13's own worked example:
+        // "the onboarding scenario has no access to stock consumption").
+        toolsByScenario.put(AgentScenario.ONBOARDING, List.of(updateOnboardingDraftTool, finalizeOnboardingTool));
     }
 
     public List<AgentTool> toolsFor(AgentScenario scenario) {

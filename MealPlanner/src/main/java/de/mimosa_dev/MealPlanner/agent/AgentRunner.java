@@ -71,7 +71,8 @@ public class AgentRunner {
             @Value("${anthropic.model}") String model,
             @Value("classpath:prompts/pantry-assistant/system-prompt.txt") Resource pantryAssistantPrompt,
             @Value("classpath:prompts/meal-planning/system-prompt.txt") Resource mealPlanningPrompt,
-            @Value("classpath:prompts/shopping-list/system-prompt.txt") Resource shoppingListPrompt) {
+            @Value("classpath:prompts/shopping-list/system-prompt.txt") Resource shoppingListPrompt,
+            @Value("classpath:prompts/onboarding/system-prompt.txt") Resource onboardingPrompt) {
         this.client = client;
         this.toolProvider = toolProvider;
         this.agentRunRepository = agentRunRepository;
@@ -84,6 +85,7 @@ public class AgentRunner {
         systemPrompts.put(AgentScenario.PANTRY_ASSISTANT, readResource(pantryAssistantPrompt));
         systemPrompts.put(AgentScenario.MEAL_PLANNING, readResource(mealPlanningPrompt));
         systemPrompts.put(AgentScenario.SHOPPING_LIST, readResource(shoppingListPrompt));
+        systemPrompts.put(AgentScenario.ONBOARDING, readResource(onboardingPrompt));
 
         this.systemPromptVersions = systemPrompts.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> sha256Hex(e.getValue()), (a, b) -> a, () -> new EnumMap<>(AgentScenario.class)));

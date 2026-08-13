@@ -1,0 +1,5 @@
+Save any subset of the user's onboarding profile as you learn it. Omit a field entirely if it
+wasn't discussed this turn — that leaves its existing saved value alone, it does not clear it.
+The one exception is excludedProductNames: once you've asked about allergies/dislikes, pass it
+(even as an empty array if the user has none) so the app knows the question was actually asked,
+not skipped. Returns which required fields are still missing so you know what to ask next.

@@ -5,6 +5,7 @@ import de.mimosa_dev.MealPlanner.agent.AgentRunner;
 import de.mimosa_dev.MealPlanner.agent.AgentScenario;
 import de.mimosa_dev.MealPlanner.agent.dto.ChatRequest;
 import de.mimosa_dev.MealPlanner.agent.dto.ChatResponse;
+import de.mimosa_dev.MealPlanner.profile.onboarding.OnboardingDraftService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -28,9 +29,11 @@ public class AgentChatController {
     private static final String TRIGGER = "web";
 
     private final AgentRunner agentRunner;
+    private final OnboardingDraftService onboardingDraftService;
 
-    public AgentChatController(AgentRunner agentRunner) {
+    public AgentChatController(AgentRunner agentRunner, OnboardingDraftService onboardingDraftService) {
         this.agentRunner = agentRunner;
+        this.onboardingDraftService = onboardingDraftService;
     }
 
     @PostMapping("/{scenario}/messages")
@@ -45,7 +48,22 @@ public class AgentChatController {
             return ResponseEntity.badRequest().build();
         }
 
-        AgentRunOutcome outcome = agentRunner.run(userId, parsedScenario, TRIGGER, request.message());
+        // FR-10a: unlike every other scenario (stateless per call, see AgentRunner's own
+        // javadoc), onboarding needs the backend to compose the draft-so-far and recent turns
+        // into the message itself, and to persist both sides of this turn afterward — entirely
+        // outside AgentRunner.run, which needs no change for this.
+        boolean isOnboarding = parsedScenario == AgentScenario.ONBOARDING;
+        String effectiveMessage = isOnboarding
+                ? onboardingDraftService.buildContextualMessage(userId, request.message())
+                : request.message();
+
+        AgentRunOutcome outcome = agentRunner.run(userId, parsedScenario, TRIGGER, effectiveMessage);
+
+        if (isOnboarding) {
+            onboardingDraftService.appendTurn(userId, "user", request.message());
+            onboardingDraftService.appendTurn(userId, "agent", outcome.message());
+        }
+
         return ResponseEntity.ok(new ChatResponse(outcome.success(), outcome.status(), outcome.message()));
     }
 }

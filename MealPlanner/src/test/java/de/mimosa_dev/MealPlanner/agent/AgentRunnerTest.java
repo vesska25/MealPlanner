@@ -41,6 +41,7 @@ class AgentRunnerTest {
     private static final Resource PANTRY_ASSISTANT_PROMPT = new ClassPathResource("prompts/pantry-assistant/system-prompt.txt");
     private static final Resource MEAL_PLANNING_PROMPT = new ClassPathResource("prompts/meal-planning/system-prompt.txt");
     private static final Resource SHOPPING_LIST_PROMPT = new ClassPathResource("prompts/shopping-list/system-prompt.txt");
+    private static final Resource ONBOARDING_PROMPT = new ClassPathResource("prompts/onboarding/system-prompt.txt");
     private static final Long USER_ID = 1L;
 
     private AnthropicClient client;
@@ -72,7 +73,7 @@ class AgentRunnerTest {
 
         runner = new AgentRunner(client, toolProvider, agentRunRepository, toolCallRepository,
                 mealPlanningFallbackService, recipeSuggestionService,
-                "claude-haiku-4-5", PANTRY_ASSISTANT_PROMPT, MEAL_PLANNING_PROMPT, SHOPPING_LIST_PROMPT);
+                "claude-haiku-4-5", PANTRY_ASSISTANT_PROMPT, MEAL_PLANNING_PROMPT, SHOPPING_LIST_PROMPT, ONBOARDING_PROMPT);
     }
 
     @Test
