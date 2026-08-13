@@ -1,0 +1,48 @@
+# Production deployment (PRD acceptance criterion #29). Run from the repo root on the server:
+#   docker compose -f docker-compose.prod.yml up -d --build
+# Secrets (POSTGRES_PASSWORD, SPRING_DATASOURCE_URL, JWT_SECRET, ANTHROPIC_API_KEY, ...) live in
+# a gitignored .env file alongside this one, never in this file or in git.
+#
+# Mirrors the existing house pattern on this VPS (see travelplanner's live deployment): the
+# backend container publishes only to 127.0.0.1 — nginx on the host does the actual public-
+# facing TLS termination and reverse proxy — and Postgres never exposes a port to the host at
+# all, reachable only from mealplanner-backend over the private mealplanner-net network.
+services:
+  mealplanner-db:
+    image: postgres:17-alpine
+    container_name: mealplanner-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-mealplanner}
+      POSTGRES_USER: ${POSTGRES_USER:-mealplanner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env for prod}
+    volumes:
+      - mealplanner_prod_postgres_data:/var/lib/postgresql/data
+    networks:
+      - mealplanner-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mealplanner} -d ${POSTGRES_DB:-mealplanner}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mealplanner-backend:
+    build:
+      context: ./MealPlanner
+    container_name: mealplanner-backend
+    restart: unless-stopped
+    depends_on:
+      mealplanner-db:
+        condition: service_healthy
+    env_file:
+      - .env
+    ports:
+      - "127.0.0.1:8082:8080"
+    networks:
+      - mealplanner-net
+
+networks:
+  mealplanner-net:
+
+volumes:
+  mealplanner_prod_postgres_data:
