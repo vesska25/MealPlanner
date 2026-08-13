@@ -8,5 +8,7 @@ public record AccountExportResponse(
         List<PantryItemExport> pantryItems,
         List<RecipeExport> recipes,
         List<CookedDishExport> cookedDishes,
-        List<AgentRunExport> agentRuns) {
+        List<AgentRunExport> agentRuns,
+        // Null when onboarding hasn't been completed yet — there's no user_profile row to export.
+        UserProfileExport profile) {
 }

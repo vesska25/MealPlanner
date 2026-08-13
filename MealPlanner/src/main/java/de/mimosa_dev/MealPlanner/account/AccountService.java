@@ -6,6 +6,7 @@ import de.mimosa_dev.MealPlanner.account.dto.CookedDishExport;
 import de.mimosa_dev.MealPlanner.account.dto.PantryItemExport;
 import de.mimosa_dev.MealPlanner.account.dto.RecipeExport;
 import de.mimosa_dev.MealPlanner.account.dto.RecipeIngredientExport;
+import de.mimosa_dev.MealPlanner.account.dto.UserProfileExport;
 import de.mimosa_dev.MealPlanner.agent.AgentRun;
 import de.mimosa_dev.MealPlanner.agent.AgentRunRepository;
 import de.mimosa_dev.MealPlanner.auth.AppUser;
@@ -14,6 +15,10 @@ import de.mimosa_dev.MealPlanner.cooking.CookedDish;
 import de.mimosa_dev.MealPlanner.cooking.CookedDishRepository;
 import de.mimosa_dev.MealPlanner.pantry.PantryItem;
 import de.mimosa_dev.MealPlanner.pantry.PantryItemRepository;
+import de.mimosa_dev.MealPlanner.product.Product;
+import de.mimosa_dev.MealPlanner.product.ProductRepository;
+import de.mimosa_dev.MealPlanner.profile.UserProfile;
+import de.mimosa_dev.MealPlanner.profile.UserProfileRepository;
 import de.mimosa_dev.MealPlanner.recipe.Recipe;
 import de.mimosa_dev.MealPlanner.recipe.RecipeRepository;
 import org.springframework.stereotype.Service;
@@ -22,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * FR-04 (export everything a user owns as JSON) and FR-05 (cascading, irreversible deletion).
@@ -36,18 +42,24 @@ public class AccountService {
     private final RecipeRepository recipeRepository;
     private final CookedDishRepository cookedDishRepository;
     private final AgentRunRepository agentRunRepository;
+    private final UserProfileRepository userProfileRepository;
+    private final ProductRepository productRepository;
 
     public AccountService(
             AppUserRepository appUserRepository,
             PantryItemRepository pantryItemRepository,
             RecipeRepository recipeRepository,
             CookedDishRepository cookedDishRepository,
-            AgentRunRepository agentRunRepository) {
+            AgentRunRepository agentRunRepository,
+            UserProfileRepository userProfileRepository,
+            ProductRepository productRepository) {
         this.appUserRepository = appUserRepository;
         this.pantryItemRepository = pantryItemRepository;
         this.recipeRepository = recipeRepository;
         this.cookedDishRepository = cookedDishRepository;
         this.agentRunRepository = agentRunRepository;
+        this.userProfileRepository = userProfileRepository;
+        this.productRepository = productRepository;
     }
 
     @Transactional(readOnly = true)
@@ -67,8 +79,11 @@ public class AccountService {
         List<AgentRunExport> agentRuns = agentRunRepository.findByUserId(userId).stream()
                 .map(AccountService::toExport)
                 .toList();
+        UserProfileExport profile = userProfileRepository.findByUserId(userId)
+                .map(this::toExport)
+                .orElse(null);
 
-        return new AccountExportResponse(user.getEmail(), pantryItems, recipes, cookedDishes, agentRuns);
+        return new AccountExportResponse(user.getEmail(), pantryItems, recipes, cookedDishes, agentRuns, profile);
     }
 
     @Transactional
@@ -110,5 +125,21 @@ public class AccountService {
         return new AgentRunExport(
                 run.getId(), run.getScenario().name(), run.getTrigger(), run.getStatus().name(),
                 run.getIterationCount(), run.getStartedAt(), run.getFinishedAt());
+    }
+
+    private UserProfileExport toExport(UserProfile profile) {
+        Set<String> excludedProductNames = productRepository.findAllById(profile.getExcludedProductIds()).stream()
+                .map(Product::getCanonicalName)
+                .collect(Collectors.toSet());
+        Set<String> freeDays = profile.getFreeDays().stream().map(Enum::name).collect(Collectors.toSet());
+        return new UserProfileExport(
+                profile.getHouseholdSize(), profile.getMaxCookTimeWeekdayMinutes(), excludedProductNames,
+                profile.getEquipment(), freeDays,
+                profile.getGoal() == null ? null : profile.getGoal().name(),
+                profile.getWeeklyBudget(), profile.getPreferredStores(), profile.getCountry(),
+                profile.getSex() == null ? null : profile.getSex().name(),
+                profile.getAgeYears(), profile.getHeightCm(), profile.getWeightKg(),
+                profile.getActivityLevel() == null ? null : profile.getActivityLevel().name(),
+                profile.isGoalsEnabled());
     }
 }

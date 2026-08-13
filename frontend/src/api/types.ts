@@ -161,12 +161,32 @@ export interface AgentRunExport {
   finishedAt: string | null
 }
 
+export interface UserProfileExport {
+  householdSize: number
+  maxCookTimeWeekdayMinutes: number
+  excludedProductNames: string[]
+  equipment: string[]
+  freeDays: string[]
+  goal: string | null
+  weeklyBudget: number | null
+  preferredStores: string | null
+  country: string | null
+  sex: string | null
+  ageYears: number | null
+  heightCm: number | null
+  weightKg: number | null
+  activityLevel: string | null
+  goalsEnabled: boolean
+}
+
 export interface AccountExportResponse {
   email: string
   pantryItems: PantryItemExport[]
   recipes: RecipeExport[]
   cookedDishes: CookedDishExport[]
   agentRuns: AgentRunExport[]
+  // Null when onboarding hasn't been completed yet.
+  profile: UserProfileExport | null
 }
 
 export interface RejectSuggestionRequest {

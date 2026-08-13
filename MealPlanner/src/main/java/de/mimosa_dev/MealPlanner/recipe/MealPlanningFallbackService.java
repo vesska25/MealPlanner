@@ -1,5 +1,6 @@
 package de.mimosa_dev.MealPlanner.recipe;
 
+import de.mimosa_dev.MealPlanner.profile.UserProfileService;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -24,12 +25,15 @@ public class MealPlanningFallbackService {
     private final RecipeRepository recipeRepository;
     private final RecipeValidator recipeValidator;
     private final RecipeCandidateScorer scorer;
+    private final UserProfileService userProfileService;
 
     public MealPlanningFallbackService(
-            RecipeRepository recipeRepository, RecipeValidator recipeValidator, RecipeCandidateScorer scorer) {
+            RecipeRepository recipeRepository, RecipeValidator recipeValidator, RecipeCandidateScorer scorer,
+            UserProfileService userProfileService) {
         this.recipeRepository = recipeRepository;
         this.recipeValidator = recipeValidator;
         this.scorer = scorer;
+        this.userProfileService = userProfileService;
     }
 
     public record FallbackPick(Recipe recipe, double score) {
@@ -40,7 +44,7 @@ public class MealPlanningFallbackService {
                 .map(recipe -> recipeRepository.findWithIngredientsById(recipe.getId()).orElseThrow())
                 .toList();
 
-        UserConstraints constraints = UserConstraints.defaults();
+        UserConstraints constraints = userProfileService.constraintsFor(userId);
         return ownRecipes.stream()
                 .filter(recipe -> recipeValidator.validate(userId, RecipeCandidate.fromRecipe(recipe), constraints).valid())
                 .map(recipe -> new FallbackPick(recipe, scorer.score(userId, RecipeCandidate.fromRecipe(recipe))))

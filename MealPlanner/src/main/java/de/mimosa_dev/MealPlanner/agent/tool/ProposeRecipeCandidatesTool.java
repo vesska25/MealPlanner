@@ -5,6 +5,7 @@ import com.anthropic.models.messages.Tool;
 import de.mimosa_dev.MealPlanner.common.Unit;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductNormalizationService;
+import de.mimosa_dev.MealPlanner.profile.UserProfileService;
 import de.mimosa_dev.MealPlanner.recipe.Recipe;
 import de.mimosa_dev.MealPlanner.recipe.RecipeCandidate;
 import de.mimosa_dev.MealPlanner.recipe.RecipeCandidateScorer;
@@ -44,6 +45,7 @@ public class ProposeRecipeCandidatesTool implements AgentTool {
     private final RecipeCandidateScorer scorer;
     private final RecipeRepository recipeRepository;
     private final RecipeSuggestionService recipeSuggestionService;
+    private final UserProfileService userProfileService;
     private final String description;
 
     public ProposeRecipeCandidatesTool(
@@ -52,12 +54,14 @@ public class ProposeRecipeCandidatesTool implements AgentTool {
             RecipeCandidateScorer scorer,
             RecipeRepository recipeRepository,
             RecipeSuggestionService recipeSuggestionService,
+            UserProfileService userProfileService,
             @Value("classpath:prompts/meal-planning/propose-recipe-candidates-tool.txt") Resource descriptionResource) {
         this.normalizationService = normalizationService;
         this.recipeValidator = recipeValidator;
         this.scorer = scorer;
         this.recipeRepository = recipeRepository;
         this.recipeSuggestionService = recipeSuggestionService;
+        this.userProfileService = userProfileService;
         this.description = ToolDescriptions.read(descriptionResource);
     }
 
@@ -135,6 +139,7 @@ public class ProposeRecipeCandidatesTool implements AgentTool {
             return "No candidates were submitted.";
         }
 
+        UserConstraints constraints = userProfileService.constraintsFor(userId);
         List<ScoredCandidate> accepted = new ArrayList<>();
         List<String> rejected = new ArrayList<>();
 
@@ -150,7 +155,7 @@ public class ProposeRecipeCandidatesTool implements AgentTool {
             RecipeCandidate candidate = new RecipeCandidate(
                     candidateInput.name(), ingredients, candidateInput.requiredEquipment(), candidateInput.cookTimeMinutes());
 
-            RecipeValidationResult validation = recipeValidator.validate(userId, candidate, UserConstraints.defaults());
+            RecipeValidationResult validation = recipeValidator.validate(userId, candidate, constraints);
             if (!validation.valid()) {
                 String reasons = validation.violations().stream()
                         .map(RecipeViolation::message)

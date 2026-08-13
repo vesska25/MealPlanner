@@ -33,6 +33,12 @@ jwt:
 cors:
   allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:5173}
 
+goals:
+  # INV-11: target calories never go below this — a config constant, not an individually
+  # computed medical value (CLAUDE.md's own wording). 1200 kcal/day is a commonly-cited safety
+  # floor; the PRD states no specific number, so this is a documented default, not a PRD fact.
+  min-allowed-daily-calories: ${GOALS_MIN_ALLOWED_DAILY_CALORIES:1200}
+
 telegram:
   # Step 12: bot-token deliberately has NO entry here (unlike anthropic.api-key's blanket
   # ${...:} default) — every Telegram-facing bean is @ConditionalOnProperty(name =

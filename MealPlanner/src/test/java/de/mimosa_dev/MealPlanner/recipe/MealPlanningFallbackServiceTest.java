@@ -7,6 +7,7 @@ import de.mimosa_dev.MealPlanner.cooking.CookedDishRepository;
 import de.mimosa_dev.MealPlanner.pantry.PantryService;
 import de.mimosa_dev.MealPlanner.product.Product;
 import de.mimosa_dev.MealPlanner.product.ProductRepository;
+import de.mimosa_dev.MealPlanner.profile.UserProfileService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,8 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@Import({MealPlanningFallbackService.class, RecipeValidator.class, RecipeCandidateScorer.class, PantryService.class})
+@Import({MealPlanningFallbackService.class, RecipeValidator.class, RecipeCandidateScorer.class, PantryService.class,
+        UserProfileService.class})
 class MealPlanningFallbackServiceTest extends AbstractIntegrationTest {
 
     private static final Long USER_ID = 1L;
