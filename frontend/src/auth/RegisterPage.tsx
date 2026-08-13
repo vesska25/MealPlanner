@@ -20,7 +20,7 @@ export function RegisterPage() {
       }),
     onSuccess: (data) => {
       login(data.token)
-      navigate('/pantry')
+      navigate('/onboarding')
     },
   })
 

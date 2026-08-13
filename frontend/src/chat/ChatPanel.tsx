@@ -4,19 +4,30 @@ import { extractErrorMessage } from '../api/client'
 import { useSendMessage } from './useSendMessage'
 import { AgentStatusBadge } from './AgentStatusBadge'
 
-interface ChatMessage {
+export interface ChatMessage {
   role: 'user' | 'agent'
   text: string
   status?: AgentRunStatus
 }
 
 /**
- * Reused across all three chat-driven scenarios. Each send is a self-contained agent run
+ * Reused across all four chat-driven scenarios. Each send is a self-contained agent run
  * (AgentChatController never threads conversation history server-side), so the transcript here
- * is purely local UI state — never persisted or resent.
+ * is purely local UI state — never persisted or resent. The one exception is `initialMessages`:
+ * onboarding is the one scenario whose backend does persist a draft + recent turns (FR-10b), so
+ * its page hydrates this panel from `GET /api/onboarding/state` on load. The other three
+ * scenarios don't pass it, so they're unaffected.
  */
-export function ChatPanel({ scenario, onMessageSent }: { scenario: AgentScenario; onMessageSent?: () => void }) {
-  const [messages, setMessages] = useState<ChatMessage[]>([])
+export function ChatPanel({
+  scenario,
+  onMessageSent,
+  initialMessages = [],
+}: {
+  scenario: AgentScenario
+  onMessageSent?: () => void
+  initialMessages?: ChatMessage[]
+}) {
+  const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [draft, setDraft] = useState('')
   const sendMessage = useSendMessage(scenario)
 

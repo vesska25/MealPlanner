@@ -10,6 +10,7 @@ import { ShoppingListPage } from './chat/ShoppingListPage'
 import { SuggestionPage } from './suggestions/SuggestionPage'
 import { CookedDishesPage } from './cooking/CookedDishesPage'
 import { AccountPage } from './account/AccountPage'
+import { OnboardingPage } from './onboarding/OnboardingPage'
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
           <Route path="/suggestions" element={<SuggestionPage />} />
           <Route path="/cooked-dishes" element={<CookedDishesPage />} />
           <Route path="/account" element={<AccountPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
         </Route>
       </Route>
     </Routes>

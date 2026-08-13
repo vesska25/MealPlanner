@@ -1,4 +1,4 @@
-export type AgentScenario = 'PANTRY_ASSISTANT' | 'MEAL_PLANNING' | 'SHOPPING_LIST'
+export type AgentScenario = 'PANTRY_ASSISTANT' | 'MEAL_PLANNING' | 'SHOPPING_LIST' | 'ONBOARDING'
 
 export type RejectionReason =
   | 'DISLIKE_DISH'
@@ -53,6 +53,24 @@ export interface ChatResponse {
   success: boolean
   status: AgentRunStatus
   message: string
+}
+
+export interface DialogueTurn {
+  role: 'user' | 'agent'
+  text: string
+}
+
+export interface OnboardingStateResponse {
+  profileFinalized: boolean
+  recentTurns: DialogueTurn[]
+}
+
+export interface GoalsResponse {
+  dailyKcal: number
+  proteinGrams: number
+  fatGrams: number
+  carbsGrams: number
+  flooredToMinimum: boolean
 }
 
 export interface RecipeIngredientResponse {

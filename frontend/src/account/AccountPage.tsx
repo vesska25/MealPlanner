@@ -5,6 +5,7 @@ import { apiFetch, extractErrorMessage } from '../api/client'
 import type { AccountExportResponse } from '../api/types'
 import { useAuth } from '../auth/useAuth'
 import { TelegramSection } from '../telegram/TelegramSection'
+import { GoalsSection } from '../profile/GoalsSection'
 
 const DELETE_CONFIRMATION_PHRASE = 'DELETE'
 
@@ -53,6 +54,8 @@ export function AccountPage() {
         </button>
         {exportData.isError && <p className="text-sm text-red-600">{extractErrorMessage(exportData.error)}</p>}
       </section>
+
+      <GoalsSection />
 
       <TelegramSection />
 
